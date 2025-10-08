@@ -18,7 +18,9 @@ using OMI.Formats.Color;
 using OMI.Formats.Languages;
 using OMI.Formats.Model;
 using OMI.Formats.Material;
+using OMI.Formats.Ghost;
 using System.Runtime.InteropServices;
+using OMI.Workers.Ghost;
 
 namespace OMI_Filetype_Library_Test
 {
@@ -40,11 +42,16 @@ namespace OMI_Filetype_Library_Test
                 //IDataFormatWriter writer = GetFormatWriterFromFilename(args[1]);
 
 
+                Console.ForegroundColor = ConsoleColor.White;
                 switch (Path.GetExtension(args[1]))
                 {
                     case ".fui":
                         FourjUserInterface fuiFile = new FourjUIReader().FromFile(args[1]);
                         new FourjUIWriter(fuiFile).WriteToFile(args[1] + ".fui");
+                        break;
+                    case ".gst":
+                        GhostRecord record = new GhostRecordReader().FromFile(args[1]);
+                        new GhostRecordWriter(record).WriteToFile(args[1] + ".new");
                         break;
                     case ".col":
                         break;
@@ -70,6 +77,8 @@ namespace OMI_Filetype_Library_Test
         {
             switch (Path.GetExtension(filename))
             {
+                case ".gst":
+                    return new GhostRecordReader();
                 case ".fui":
                     return new FourjUIReader();
                 case ".col":
