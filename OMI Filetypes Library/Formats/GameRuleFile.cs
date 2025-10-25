@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.IO.Compression;
+using Newtonsoft.Json;
 using OMI.Workers.GameRule;
 
 namespace OMI.Formats.GameRule
@@ -261,6 +262,7 @@ namespace OMI.Formats.GameRule
 
             public string Name { get; set; } = string.Empty;
 
+            [JsonIgnore]
             public GameRule Parent { get; } = null;
             public Dictionary<string, string> Parameters { get; } = new Dictionary<string, string>();
             public List<GameRule> ChildRules { get; } = new List<GameRule>();
