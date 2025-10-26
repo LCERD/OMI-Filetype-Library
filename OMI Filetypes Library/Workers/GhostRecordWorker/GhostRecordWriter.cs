@@ -26,15 +26,15 @@ namespace OMI.Workers.Ghost
 {
     public class GhostRecordWriter : IDataFormatWriter
     {
-        private GhostRecord _Record;
-        public GhostRecordWriter(GhostRecord _record)
+        private GhostRecord _record;
+        public GhostRecordWriter(GhostRecord record)
         {
-            _Record = _record;
+            _record = record;
         }
 
         public void WriteToFile(string fileName)
         {
-            using (var fs = File.OpenWrite(fileName))
+            using (FileStream fs = File.OpenWrite(fileName))
             {
                 WriteToStream(fs);
             }
@@ -42,19 +42,19 @@ namespace OMI.Workers.Ghost
 
         public void WriteToStream(Stream stream)
         {
-            byte[] Buff = new byte[0x5DCC];
-            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, Endianness.BigEndian))
+            byte[] buffer = new byte[0x5DCC];
+            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, ByteOrder.BigEndian))
             {
-                writer.Write(Buff);
+                writer.Write(buffer);
                 writer.BaseStream.Position = 0;
                 writer.Write((short)4);
-                writer.Write(_Record.startX);
-                writer.Write(_Record.startY);
-                writer.Write(_Record.startZ);
-                writer.Write(_Record.TimeLength);
-                writer.Write((UInt32)_Record.Count);
+                writer.Write(_record.startX);
+                writer.Write(_record.startY);
+                writer.Write(_record.startZ);
+                writer.Write(_record.TimeLength);
+                writer.Write((UInt32)_record.Count);
 
-                foreach(GhostRecord.RecordSample sample in _Record)
+                foreach(GhostRecord.RecordSample sample in _record)
                 {
                     writer.Write(sample.Timestamp);
                     writer.Write(sample.Position[0]);
@@ -67,17 +67,6 @@ namespace OMI.Workers.Ghost
 
 
             }
-        }
-
-        private static int GetRGBAFromColor(System.Drawing.Color color)
-        {
-            int argb = color.ToArgb();
-            return (argb & 0xffffff) << 8 | argb >> 24 & 0xff;
-        }
-
-        private void WriteByte(Stream stream, byte b)
-        {
-            stream.WriteByte(b);
         }
     }
 }

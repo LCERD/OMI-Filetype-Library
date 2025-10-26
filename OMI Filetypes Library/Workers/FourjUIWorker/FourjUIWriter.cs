@@ -38,7 +38,7 @@ namespace OMI.Workers.FUI
 
         public void WriteToFile(string fileName)
         {
-            using (var fs = File.OpenWrite(fileName))
+            using (FileStream fs = File.OpenWrite(fileName))
             {
                 WriteToStream(fs);
             }
@@ -48,7 +48,7 @@ namespace OMI.Workers.FUI
         {
             _UIContainer.ImagesData.Clear();
             ImageConverter converter = new ImageConverter();
-            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, Endianness.LittleEndian))
+            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, ByteOrder.LittleEndian))
             {
                 writer.Write(_UIContainer.Header.Signature);
 
@@ -67,14 +67,14 @@ namespace OMI.Workers.FUI
                 writer.Write(_UIContainer.Symbols.Count);
                 writer.Write(_UIContainer.Bitmaps.Count);
 
-                int ImagesSize = 0;
+                int imagesSize = 0;
                 foreach (FuiBitmap img in _UIContainer.Bitmaps)
                 {
-                    ImagesSize += ((byte[])converter.ConvertTo(img.image, typeof(byte[]))).Length;
+                    imagesSize += ((byte[])converter.ConvertTo(img.image, typeof(byte[]))).Length;
                 }
 
 
-                writer.Write(ImagesSize);
+                writer.Write(imagesSize);
                 writer.Write(_UIContainer.FontNames.Count);
                 writer.Write(_UIContainer.ImportAssets.Count);
                 writer.Write(_UIContainer.Header.FrameSize.Min.X);

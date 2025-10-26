@@ -12,7 +12,7 @@ namespace OMI.Workers.Archive
         {
             if (!File.Exists(filename))
                 throw new FileNotFoundException(filename);
-            using (var fs = File.OpenRead(filename))
+            using (FileStream fs = File.OpenRead(filename))
             {
                 return FromStream(fs);
             }
@@ -20,19 +20,19 @@ namespace OMI.Workers.Archive
 
         public ConsoleArchive FromStream(Stream stream)
         {
-            ConsoleArchive _archive = new ConsoleArchive();
-            using (EndiannessAwareBinaryReader reader = new EndiannessAwareBinaryReader(stream, Endianness.BigEndian))
+            ConsoleArchive archive = new ConsoleArchive();
+            using (EndiannessAwareBinaryReader reader = new EndiannessAwareBinaryReader(stream, ByteOrder.BigEndian))
             {
-                int NumberOfFiles = reader.ReadInt32();
-                for (int i = 0; i < NumberOfFiles; i++)
+                int numberOfFiles = reader.ReadInt32();
+                for (int i = 0; i < numberOfFiles; i++)
                 {
                     string name = ReadString(reader);
                     int pos = reader.ReadInt32();
                     int size = reader.ReadInt32();
-                    _archive[name] = ReadBytesFromPosition(stream, pos, size);
+                    archive[name] = ReadBytesFromPosition(stream, pos, size);
                 }
             }
-            return _archive;
+            return archive;
         }
 
         private string ReadString(EndiannessAwareBinaryReader reader)
@@ -44,10 +44,12 @@ namespace OMI.Workers.Archive
         private byte[] ReadBytesFromPosition(Stream stream, int position, int size)
         {
             long origin = stream.Position;
-            if (stream.Seek(position, SeekOrigin.Begin) != position) throw new Exception();
+            if (stream.Seek(position, SeekOrigin.Begin) != position)
+                throw new Exception();
             byte[] bytes = new byte[size];
             stream.Read(bytes, 0, size);
-            if (stream.Seek(origin, SeekOrigin.Begin) != origin) throw new Exception();
+            if (stream.Seek(origin, SeekOrigin.Begin) != origin)
+                throw new Exception();
             return bytes;
         }
 

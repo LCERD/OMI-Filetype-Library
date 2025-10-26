@@ -43,7 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Endianness.cs" />
+    <Compile Include="ByteOrder.cs" />
     <Compile Include="Extentions\EndiannessAwareBinaryExtention.cs" />
     <Compile Include="Formats\BehaviourFile.cs" />
     <Compile Include="Formats\GhostRecord.cs" />

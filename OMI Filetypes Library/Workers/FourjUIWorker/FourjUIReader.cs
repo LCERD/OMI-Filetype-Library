@@ -40,64 +40,64 @@ namespace OMI.Workers.FUI
         {
             if (!File.Exists(filename))
                 throw new FileNotFoundException(filename);
-            FourjUserInterface UserInterfaceContainer;
-            using (var fs = File.OpenRead(filename))
+            FourjUserInterface userInterfaceContainer;
+            using (FileStream fs = File.OpenRead(filename))
             {
-                UserInterfaceContainer = FromStream(fs);
+                userInterfaceContainer = FromStream(fs);
             }
-            return UserInterfaceContainer;
+            return userInterfaceContainer;
         }
 
         public FourjUserInterface FromStream(Stream stream)
         {
-            FourjUserInterface UIContainer = new FourjUserInterface();
-            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, Endianness.LittleEndian))
+            FourjUserInterface fuiContainer = new FourjUserInterface();
+            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, ByteOrder.LittleEndian))
             {
-                UIContainer.Header.Signature = reader.ReadInt64(Endianness.LittleEndian);
-                UIContainer.Header.ContentSize = reader.ReadInt32();
-                UIContainer.Header.SwfFileName = reader.ReadString(0x40);
+                fuiContainer.Header.Signature = reader.ReadInt64(ByteOrder.LittleEndian);
+                fuiContainer.Header.ContentSize = reader.ReadInt32();
+                fuiContainer.Header.SwfFileName = reader.ReadString(0x40);
 
-                UIContainer.Timelines = new List<FuiTimeline>(reader.ReadInt32());
-                UIContainer.TimelineEventNames = new List<string>(reader.ReadInt32());
-                UIContainer.TimelineActions = new List<FuiTimelineAction>(reader.ReadInt32());
-                UIContainer.Shapes = new List<FuiShape>(reader.ReadInt32());
-                UIContainer.ShapeComponents = new List<FuiShapeComponent>(reader.ReadInt32());
-                UIContainer.Verts = new List<PointF>(reader.ReadInt32());
-                UIContainer.TimelineFrames = new List<FuiTimelineFrame>(reader.ReadInt32());
-                UIContainer.TimelineEvents = new List<FuiTimelineEvent>(reader.ReadInt32());
-                UIContainer.References = new List<FuiReference>(reader.ReadInt32());
-                UIContainer.Edittexts = new List<FuiEdittext>(reader.ReadInt32());
-                UIContainer.Symbols = new List<FuiSymbol>(reader.ReadInt32());
-                UIContainer.Bitmaps = new List<FuiBitmap>(reader.ReadInt32());
+                fuiContainer.Timelines = new List<FuiTimeline>(reader.ReadInt32());
+                fuiContainer.TimelineEventNames = new List<string>(reader.ReadInt32());
+                fuiContainer.TimelineActions = new List<FuiTimelineAction>(reader.ReadInt32());
+                fuiContainer.Shapes = new List<FuiShape>(reader.ReadInt32());
+                fuiContainer.ShapeComponents = new List<FuiShapeComponent>(reader.ReadInt32());
+                fuiContainer.Verts = new List<PointF>(reader.ReadInt32());
+                fuiContainer.TimelineFrames = new List<FuiTimelineFrame>(reader.ReadInt32());
+                fuiContainer.TimelineEvents = new List<FuiTimelineEvent>(reader.ReadInt32());
+                fuiContainer.References = new List<FuiReference>(reader.ReadInt32());
+                fuiContainer.Edittexts = new List<FuiEdittext>(reader.ReadInt32());
+                fuiContainer.Symbols = new List<FuiSymbol>(reader.ReadInt32());
+                fuiContainer.Bitmaps = new List<FuiBitmap>(reader.ReadInt32());
 
                 int imagesSize = reader.ReadInt32();
 
-                UIContainer.FontNames = new List<FuiFontName>(reader.ReadInt32());
-                UIContainer.ImportAssets = new List<string>(reader.ReadInt32());
+                fuiContainer.FontNames = new List<FuiFontName>(reader.ReadInt32());
+                fuiContainer.ImportAssets = new List<string>(reader.ReadInt32());
 
-                UIContainer.Header.FrameSize.Min.X = reader.ReadSingle();
-                UIContainer.Header.FrameSize.Max.X = reader.ReadSingle();
-                UIContainer.Header.FrameSize.Min.Y = reader.ReadSingle();
-                UIContainer.Header.FrameSize.Max.Y = reader.ReadSingle();
+                fuiContainer.Header.FrameSize.Min.X = reader.ReadSingle();
+                fuiContainer.Header.FrameSize.Max.X = reader.ReadSingle();
+                fuiContainer.Header.FrameSize.Min.Y = reader.ReadSingle();
+                fuiContainer.Header.FrameSize.Max.Y = reader.ReadSingle();
 
-                reader.Fill(UIContainer.Timelines, ReadTimeline);
-                reader.Fill(UIContainer.TimelineActions, ReadTimelineAction);
-                reader.Fill(UIContainer.Shapes, ReadShape);
-                reader.Fill(UIContainer.ShapeComponents, ReadShapeComponent);
-                reader.Fill(UIContainer.Verts, ReadVert);
-                reader.Fill(UIContainer.TimelineFrames, ReadTimelineFrame);
-                reader.Fill(UIContainer.TimelineEvents, ReadTimelineEvent);
-                reader.Fill(UIContainer.TimelineEventNames, ReadString);
-                reader.Fill(UIContainer.References, ReadReference);
-                reader.Fill(UIContainer.Edittexts, ReadEdittext);
-                reader.Fill(UIContainer.FontNames, ReadFontName);
-                reader.Fill(UIContainer.Symbols, ReadSymbol);
-                reader.Fill(UIContainer.ImportAssets, ReadString);
-                reader.Fill(UIContainer.Bitmaps, ReadBitmap);
+                reader.Fill(fuiContainer.Timelines, ReadTimeline);
+                reader.Fill(fuiContainer.TimelineActions, ReadTimelineAction);
+                reader.Fill(fuiContainer.Shapes, ReadShape);
+                reader.Fill(fuiContainer.ShapeComponents, ReadShapeComponent);
+                reader.Fill(fuiContainer.Verts, ReadVert);
+                reader.Fill(fuiContainer.TimelineFrames, ReadTimelineFrame);
+                reader.Fill(fuiContainer.TimelineEvents, ReadTimelineEvent);
+                reader.Fill(fuiContainer.TimelineEventNames, ReadString);
+                reader.Fill(fuiContainer.References, ReadReference);
+                reader.Fill(fuiContainer.Edittexts, ReadEdittext);
+                reader.Fill(fuiContainer.FontNames, ReadFontName);
+                reader.Fill(fuiContainer.Symbols, ReadSymbol);
+                reader.Fill(fuiContainer.ImportAssets, ReadString);
+                reader.Fill(fuiContainer.Bitmaps, ReadBitmap);
 
                 using (var ms = new MemoryStream(reader.ReadBytes(imagesSize)))
                 {
-                    foreach (FuiBitmap bitmap in UIContainer.Bitmaps)
+                    foreach (FuiBitmap bitmap in fuiContainer.Bitmaps)
                     {
                         long origin = ms.Position;
                         ms.Seek(bitmap.Offset, SeekOrigin.Begin);
@@ -120,7 +120,7 @@ namespace OMI.Workers.FUI
                     }
                 }
             }
-            return UIContainer;
+            return fuiContainer;
         }
 
         private FuiBitmap ReadBitmap(EndiannessAwareBinaryReader reader)

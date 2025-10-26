@@ -36,61 +36,61 @@ namespace OMI.Workers.Ghost
         {
             if (!File.Exists(filename))
                 throw new FileNotFoundException(filename);
-            GhostRecord RecordFile;
-            using (var fs = File.OpenRead(filename))
+            GhostRecord recordFile;
+            using (FileStream fs = File.OpenRead(filename))
             {
-                RecordFile = FromStream(fs);
+                recordFile = FromStream(fs);
             }
-            return RecordFile;
+            return recordFile;
         }
 
         public GhostRecord FromStream(Stream stream)
         {
-            GhostRecord Record = new GhostRecord();
+            GhostRecord record = new GhostRecord();
 
-            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, Endianness.BigEndian))
+            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, ByteOrder.BigEndian))
             {
                 reader.ReadUInt16();
-                Record.startX = reader.ReadSingle();
-                Record.startY = reader.ReadSingle();
-                Record.startZ = reader.ReadSingle();
-                Record.TimeLength = reader.ReadInt64();
-                Record.NumSamples = reader.ReadUInt32();
-                if(Record.NumSamples != 0)
+                record.startX = reader.ReadSingle();
+                record.startY = reader.ReadSingle();
+                record.startZ = reader.ReadSingle();
+                record.TimeLength = reader.ReadInt64();
+                record.NumSamples = reader.ReadUInt32();
+                if(record.NumSamples != 0)
                 {
-                    for (uint uVar5 = Record.NumSamples >> 3; uVar5 != 0; uVar5 = uVar5 - 1)
+                    for (uint uVar5 = record.NumSamples >> 3; uVar5 != 0; uVar5 = uVar5 - 1)
                     {
-                        Record.Add(ReadSample(reader));
-                        Record.Add(ReadSample(reader));
-                        Record.Add(ReadSample(reader));
-                        Record.Add(ReadSample(reader));
-                        Record.Add(ReadSample(reader));
-                        Record.Add(ReadSample(reader));
-                        Record.Add(ReadSample(reader));
-                        Record.Add(ReadSample(reader));
+                        record.Add(ReadSample(reader));
+                        record.Add(ReadSample(reader));
+                        record.Add(ReadSample(reader));
+                        record.Add(ReadSample(reader));
+                        record.Add(ReadSample(reader));
+                        record.Add(ReadSample(reader));
+                        record.Add(ReadSample(reader));
+                        record.Add(ReadSample(reader));
                     }
-                    uint TempSamples = Record.NumSamples;
-                    for (TempSamples = TempSamples & 7; TempSamples != 0; TempSamples = TempSamples - 1)
+                    uint tempSamples = record.NumSamples;
+                    for (tempSamples = tempSamples & 7; tempSamples != 0; tempSamples = tempSamples - 1)
                     {
-                        Record.Add(ReadSample(reader));
+                        record.Add(ReadSample(reader));
                     }
                 }
             }
-            return Record;
+            return record;
         }
 
         private GhostRecord.RecordSample ReadSample(EndiannessAwareBinaryReader reader)
         {
-            GhostRecord.RecordSample _sample = new GhostRecord.RecordSample();
-            _sample.Timestamp = reader.ReadInt64();
-            _sample.TimestampAsTime = TimeSpan.FromMilliseconds(_sample.Timestamp);
-            _sample.Position[0] = reader.ReadInt16();
-            _sample.Position[1] = reader.ReadInt16();
-            _sample.Position[2] = reader.ReadInt16();
-            _sample.Rotation[0] = reader.ReadInt16();
-            _sample.Rotation[1] = reader.ReadInt16();
-            _sample.Rotation[2] = reader.ReadInt16();
-            return _sample;
+            GhostRecord.RecordSample sample = new GhostRecord.RecordSample();
+            sample.Timestamp = reader.ReadInt64();
+            sample.TimestampAsTime = TimeSpan.FromMilliseconds(sample.Timestamp);
+            sample.Position[0] = reader.ReadInt16();
+            sample.Position[1] = reader.ReadInt16();
+            sample.Position[2] = reader.ReadInt16();
+            sample.Rotation[0] = reader.ReadInt16();
+            sample.Rotation[1] = reader.ReadInt16();
+            sample.Rotation[2] = reader.ReadInt16();
+            return sample;
         }
 
         object IDataFormatReader.FromStream(Stream stream) => FromStream(stream);
