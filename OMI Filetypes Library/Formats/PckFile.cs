@@ -35,27 +35,27 @@ namespace OMI.Formats.Pck
 
         public List<string> GetPropertyList()
         {
-            var LUT = new List<string>();
-            foreach (var file in Assets)
+            var lut = new List<string>();
+            foreach (PckAsset asset in Assets)
             {
-                file.Properties.ForEach(pair =>
+                asset.Properties.ForEach(pair =>
                 {
-                    if (!LUT.Contains(pair.Key))
-                        LUT.Add(pair.Key);
+                    if (!lut.Contains(pair.Key))
+                        lut.Add(pair.Key);
                 });
             }
-            return LUT;
+            return lut;
         }
 
         /// <summary>
         /// Create and add new <see cref="PckAsset"/> object.
         /// </summary>
-        /// <param name="filename">Filename</param>
+        /// <param name="assetName">Filename</param>
         /// <param name="assetType">Filetype</param>
         /// <returns>Added <see cref="PckAsset"/> object</returns>
-        public PckAsset CreateNewAsset(string filename, PckAssetType assetType)
+        public PckAsset CreateNewAsset(string assetName, PckAssetType assetType)
         {
-            var file = new PckAsset(filename, assetType);
+            var file = new PckAsset(assetName, assetType);
             AddAsset(file);
             return file;
         }
@@ -63,64 +63,58 @@ namespace OMI.Formats.Pck
         /// <summary>
         /// Create, add and initialize new <see cref="PckAsset"/> object.
         /// </summary>
-        /// <param name="filename">Filename</param>
+        /// <param name="assetName">Filename</param>
         /// <param name="assetType">Filetype</param>
         /// <returns>Initialized <see cref="PckAsset"/> object</returns>
-        public PckAsset CreateNewAsset(string filename, PckAssetType assetType, Func<byte[]> dataInitializier)
+        public PckAsset CreateNewAsset(string assetName, PckAssetType assetType, Func<byte[]> dataInitializier)
         {
-            var asset = CreateNewAsset(filename, assetType);
+            PckAsset asset = CreateNewAsset(assetName, assetType);
             asset.SetData(dataInitializier?.Invoke());
             return asset;
         }
 
         /// <summary>
-        /// Checks wether a file with <paramref name="filename"/> and <paramref name="assetType"/> exists
+        /// Checks wether a file with <paramref name="assetName"/> and <paramref name="assetType"/> exists
         /// </summary>
-        /// <param name="filename">Path to the file in the pck</param>
+        /// <param name="assetName">Path to the file in the pck</param>
         /// <param name="assetType">Type of the file <see cref="PckAsset.FileType"/></param>
         /// <returns>True when file exists, otherwise false </returns>
-        public bool HasAsset(string filename, PckAssetType assetType)
+        public bool HasAsset(string assetName, PckAssetType assetType)
         {
-            return Assets.Contains(filename, assetType);
+            return Assets.Contains(assetName, assetType);
         }
 
         /// <summary>
-        /// Gets the first file that Equals <paramref name="filename"/> and <paramref name="assetType"/>
+        /// Gets the first file that Equals <paramref name="assetName"/> and <paramref name="assetType"/>
         /// </summary>
-        /// <param name="filename">Path to the file in the pck</param>
+        /// <param name="assetName">Path to the file in the pck</param>
         /// <param name="assetType">Type of the file <see cref="PckAsset.FileType"/></param>
         /// <returns>FileData if found, otherwise null</returns>
         /// <exception cref="KeyNotFoundException"></exception>
-        public PckAsset GetAsset(string filename, PckAssetType assetType)
+        public PckAsset GetAsset(string assetName, PckAssetType assetType)
         {
-            return Assets.GetAsset(filename, assetType);
+            return Assets.GetAsset(assetName, assetType);
         }
 
         /// <summary>
-        /// Tries to get a file with <paramref name="filename"/> and <paramref name="assetType"/>.
+        /// Tries to get a file with <paramref name="assetPath"/> and <paramref name="assetType"/>.
         /// </summary>
-        /// <param name="filename">Path to the file in the pck</param>
+        /// <param name="assetPath">Path to the file in the pck</param>
         /// <param name="assetType">Type of the file <see cref="PckAsset.FileType"/></param>
         /// <param name="asset">If succeeded <paramref name="asset"/> will be non-null, otherwise null</param>
         /// <returns>True if succeeded, otherwise false</returns>
-        public bool TryGetAsset(string filename, PckAssetType assetType, out PckAsset asset)
+        public bool TryGetAsset(string assetPath, PckAssetType assetType, out PckAsset asset)
         {
-            if (HasAsset(filename, assetType))
-            {
-                asset = GetAsset(filename, assetType);
-                return true;
-            }
-                asset = null;
-                return false;
-            }
+            return Assets.TryGet(assetPath, assetType, out asset);
+        }
 
-        private void OnPckAssetNameChanging(PckAsset value, string newFilename)
+        private void OnPckAssetNameChanging(PckAsset value, string newAssetName)
         {
-            if (value.Filename.Equals(newFilename))
+            if (value.Filename.Equals(newAssetName))
                 return;
             int index = Assets.IndexOf(value);
             Assets.RemoveKeyFromCollection(value);
-            Assets.Insert(index, value, newFilename, value.Type);
+            Assets.Insert(index, value, newAssetName, value.Type);
         }
 
         private void OnPckAssetTypeChanging(PckAsset value, PckAssetType newAssetType)
@@ -140,23 +134,28 @@ namespace OMI.Formats.Pck
             }
         }
 
-        public PckAsset GetOrCreate(string filename, PckAssetType assetType)
+        public PckAsset GetOrCreate(string assetName, PckAssetType assetType)
         {
-            if (Assets.Contains(filename, assetType))
+            if (Assets.Contains(assetName, assetType))
             {
-                return Assets.GetAsset(filename, assetType);
+                return Assets.GetAsset(assetName, assetType);
             }
-            return CreateNewAsset(filename, assetType);
+            return CreateNewAsset(assetName, assetType);
         }
 
-        public bool Contains(string filename, PckAssetType assetType)
+        public bool Contains(string assetName, PckAssetType assetType)
         {
-            return Assets.Contains(filename, assetType);
+            return Assets.Contains(assetName, assetType);
         }
 
         public bool Contains(PckAssetType assetType)
         {
             return Assets.Contains(assetType);
+        }
+
+        public IEnumerable<PckAsset> GetAssetsByType(PckAssetType assetType)
+        {
+            return Assets.GetByType(assetType);
         }
 
         public void AddAsset(PckAsset asset)
@@ -169,11 +168,6 @@ namespace OMI.Formats.Pck
         public IReadOnlyCollection<PckAsset> GetAssets()
         {
             return new ReadOnlyCollection<PckAsset>(Assets);
-        }
-
-        public bool TryGetValue(string filename, PckAssetType assetType, out PckAsset asset)
-        {
-            return Assets.TryGetValue(filename, assetType, out asset);
         }
 
         public bool RemoveAsset(PckAsset asset)

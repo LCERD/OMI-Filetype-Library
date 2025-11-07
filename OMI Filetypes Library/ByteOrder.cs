@@ -19,7 +19,7 @@ namespace OMI
 {
     public enum ByteOrder
     {
-        LittleEndian,
         BigEndian,
+        LittleEndian,
     }
 }

@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO.Compression;
+using System.Linq;
 using OMI.Workers.GameRule;
 
 namespace OMI.Formats.GameRule
 {
-    public class GameRuleFile
+    public sealed class GameRuleFile
     {
         public static readonly string[] ValidGameRules = new string[]
             {
@@ -119,6 +119,20 @@ namespace OMI.Formats.GameRule
             XMem,
         }
 
+        public struct GameRuleParameter
+        {
+            public string Name;
+            public string Value;
+
+            public GameRuleParameter(string name, string value)
+            {
+                Name = name;
+                Value = value;
+            }
+
+            public static implicit operator GameRuleParameter(KeyValuePair<string, string> keyValuePair) => new GameRuleParameter(keyValuePair.Key, keyValuePair.Value);
+        }
+
         /// <summary>
         /// Initializes a new <see cref="GameRuleFile"/> with the compression level set to <see cref="CompressionLevel.None"/>.
         /// </summary>
@@ -148,7 +162,7 @@ namespace OMI.Formats.GameRule
             Files.Add(new FileEntry(name, data));
         }
 
-        public class GameRule
+        public sealed class GameRule
         {
             /// <summary> Contains all valid Parameter names </summary>
             public static readonly string[] ValidParameters = new string[]
@@ -286,14 +300,14 @@ namespace OMI.Formats.GameRule
                 return rule;
             }
 
-            public GameRule AddRule(string gameRuleName, params KeyValuePair<string,string>[] parameters)
+            public GameRule AddRule(string gameRuleName, params GameRuleParameter[] parameters)
             {
-                var rule = AddRule(gameRuleName);
+                GameRule rule = AddRule(gameRuleName);
                 if (rule is null)
                     throw new InvalidOperationException($"Game rule name '{gameRuleName}' is not valid.");
-                foreach(var param in parameters)
+                foreach (GameRuleParameter parameter in parameters)
                 { 
-                    rule.Parameters[param.Key] = param.Value;
+                    rule.Parameters[parameter.Name] = parameter.Value;
                 }
                 return rule;
             }
@@ -307,7 +321,7 @@ namespace OMI.Formats.GameRule
         public GameRule AddRule(string gameRuleName, bool validate)
             => Root.AddRule(gameRuleName, validate);
 
-        public GameRule AddRule(string gameRuleName, params KeyValuePair<string, string>[] parameters)
+        public GameRule AddRule(string gameRuleName, params GameRuleParameter[] parameters)
             => Root.AddRule(gameRuleName, parameters);
     }
 }

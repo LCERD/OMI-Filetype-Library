@@ -90,12 +90,12 @@ namespace OMI.Formats.Pck
 
         public bool Contains(PckAssetType assetType)
         {
-            foreach (var file in _files.Values.Cast<PckAsset>())
-            {
-                if (file.Type == assetType)
-                    return true;
-            }
-            return false;
+            return _files.Values.Cast<PckAsset>().FirstOrDefault(asset => asset.Type == assetType) is not null;
+        }
+
+        public IEnumerable<PckAsset> GetByType(PckAssetType assetType)
+        {
+            return _files.Values.Cast<PckAsset>().Where(asset => asset.Type == assetType);
         }
 
         private object GetStorageKey(string key, PckAssetType assetType)
@@ -136,10 +136,10 @@ namespace OMI.Formats.Pck
             _ = item ?? throw new ArgumentNullException(nameof(item));
             _files.Insert(index, GetStorageKey(item), item);
         }
-        public void Insert(int index, PckAsset item, string Filename, PckAssetType Type)
+        public void Insert(int index, PckAsset item, string filename, PckAssetType type)
         {
             _ = item ?? throw new ArgumentNullException(nameof(item));
-            _files.Insert(index, GetStorageKey(Filename, Type), item);
+            _files.Insert(index, GetStorageKey(filename, type), item);
         }
 
         internal bool Remove(string filename, PckAssetType assetType)
@@ -177,12 +177,12 @@ namespace OMI.Formats.Pck
             duplicates.Clear();
         }
 
-        public void RemoveAll(Predicate<PckAsset> value)
+        public void RemoveAll(Predicate<PckAsset> predicate)
         {
             var valuesToRemove = new List<PckAsset>();
             foreach (PckAsset item in _files.Values)
             {
-                if (value(item))
+                if (predicate(item))
                     valuesToRemove.Add(item);
             }
             valuesToRemove.ForEach(v => Remove(v));
@@ -193,7 +193,7 @@ namespace OMI.Formats.Pck
             _files.RemoveAt(index);
         }
 
-        internal bool TryGetValue(string key, PckAssetType assetType, out PckAsset value)
+        internal bool TryGet(string key, PckAssetType assetType, out PckAsset value)
         {
             if (Contains(key, assetType))
             {
