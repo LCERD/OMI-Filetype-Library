@@ -158,10 +158,10 @@ namespace OMI.Workers.GameRule
             for (int i = 0; i < count; i++)
             {
                 (string Name, int Count) parameter = (GetString(reader), reader.ReadInt32());
-                var rule = parent.AddRule(parameter.Name);
+                GameRuleFile.GameRule rule = parent.AddRule(parameter.Name);
                 for (int j = 0; j < parameter.Count; j++)
                 {
-                    rule.Parameters.Add(GetString(reader), ReadString(reader));
+                    rule.AddParameter(GetString(reader), ReadString(reader));
                 }
                 ReadGameRuleHierarchy(reader, rule);
             }

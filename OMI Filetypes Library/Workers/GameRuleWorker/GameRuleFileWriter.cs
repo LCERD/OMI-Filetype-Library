@@ -28,9 +28,9 @@ namespace OMI.Workers.GameRule
         {
             if (!lut.Contains(rule.Name))
                 lut.Add(rule.Name);
-            foreach (GameRuleFile.GameRule subRule in rule.ChildRules)
+            foreach (GameRuleFile.GameRule subRule in rule.GetRules())
                 PrepareLookUpTable(subRule, ref lut);
-            foreach (KeyValuePair<string, string> parameter in rule.Parameters)
+            foreach (KeyValuePair<string, string> parameter in rule.GetParameters())
                 if (!lut.Contains(parameter.Key))
                     lut.Add(parameter.Key);
         }
@@ -143,12 +143,14 @@ namespace OMI.Workers.GameRule
 
         private void WriteGameRuleHierarchy(EndiannessAwareBinaryWriter writer, GameRuleFile.GameRule rule)
         {
-            writer.Write(rule.ChildRules.Count);
-            foreach (GameRuleFile.GameRule subRule in rule.ChildRules)
+            IReadOnlyCollection<GameRuleFile.GameRule> rules = rule.GetRules();
+            writer.Write(rules.Count);
+            foreach (GameRuleFile.GameRule subRule in rules)
             {
                 SetString(writer, subRule.Name);
-                writer.Write(subRule.Parameters.Count);
-                foreach (KeyValuePair<string, string> parameter in subRule.Parameters)
+                IReadOnlyCollection<KeyValuePair<string, string>> parameters = subRule.GetParameters();
+                writer.Write(parameters.Count);
+                foreach (KeyValuePair<string, string> parameter in parameters)
                     WriteParameter(writer, parameter);
                 WriteGameRuleHierarchy(writer, subRule);
             }
