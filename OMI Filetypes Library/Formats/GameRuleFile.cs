@@ -133,6 +133,31 @@ namespace OMI.Formats.GameRule
             public static implicit operator GameRuleParameter(KeyValuePair<string, string> keyValuePair) => new GameRuleParameter(keyValuePair.Key, keyValuePair.Value);
         }
 
+        public abstract class TParameter<T>
+        {
+            public readonly string Name;
+            public readonly T Value;
+
+            public TParameter(string name, T value)
+            {
+                Name = name;
+                Value = value;
+            }
+
+            protected virtual string GetFormattedValue() => Value.ToString();
+
+            public static implicit operator GameRuleParameter(TParameter<T> parameter) => new GameRuleParameter(parameter.Name, parameter.GetFormattedValue());
+        }
+
+        public sealed class IntParameter(string name, int value) : TParameter<int>(name, value) { }
+
+        public sealed class BoolParameter(string name, bool value) : TParameter<bool>(name, value)
+        {
+            protected override string GetFormattedValue() => Value.ToString().ToLower();
+        }
+
+        public sealed class FloatParameter(string name, float value) : TParameter<float>(name, value) { }
+
         /// <summary>
         /// Initializes a new <see cref="GameRuleFile"/> with the compression level set to <see cref="CompressionLevel.None"/>.
         /// </summary>
