@@ -382,8 +382,8 @@ namespace OMI.Formats.GameRule
         public GameRule AddRule(string gameRuleName)
             => AddRule(gameRuleName, false);
 
-        public GameRule AddRule(GameRule gameRule)
-            => AddRule(gameRule);
+        public void AddRule(GameRule gameRule)
+            => Root.AddRule(gameRule);
 
         public GameRule AddRule(string gameRuleName, bool validate)
             => Root.AddRule(gameRuleName, validate);
