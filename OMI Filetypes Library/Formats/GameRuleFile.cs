@@ -97,9 +97,9 @@ namespace OMI.Formats.GameRule
 
         public enum CompressionLevel : byte
         {
-            None             = 0,
-            Compressed       = 1,
-            CompressedRle    = 2,
+            None = 0,
+            Compressed = 1,
+            CompressedRle = 2,
             CompressedRleCrc = 3,
         }
 
@@ -299,7 +299,7 @@ namespace OMI.Formats.GameRule
                 "beam_length",
             };
 
-            public string Name { get; set; } = string.Empty;
+            public string Name { get; } = string.Empty;
 
             public GameRule Parent => _parent;
             private GameRule _parent = null;
@@ -365,6 +365,20 @@ namespace OMI.Formats.GameRule
             }
 
             public IReadOnlyCollection<GameRule> GetRules() => _childRules;
+
+            public bool TryGetRule(string gameRuleName, out GameRule rule)
+            {
+                rule = _childRules.Find(rule => rule.Name == gameRuleName);
+                return rule != null; 
+            }
+
+            public bool HasRule(string gameRuleName) => _childRules.Find(rule => rule.Name == gameRuleName) is not null;
+
+            public GameRule GetRule(string gameRuleName) => _childRules.Find(rule => rule.Name == gameRuleName);
+
+            public string GetParameterValue(string parameterName) => _parameters.TryGetValue(parameterName, out string value) ? value : string.Empty;
+            
+            public bool TryGetParameterValue(string parameterName, out string value) => _parameters.TryGetValue(parameterName, out value);
 
             public bool RemoveRule(GameRule rule) => _childRules.Remove(rule);
 
