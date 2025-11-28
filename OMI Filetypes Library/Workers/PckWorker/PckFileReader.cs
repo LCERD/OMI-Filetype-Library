@@ -83,7 +83,7 @@ namespace OMI.Workers.Pck
                 string value = ReadString(reader);
                 propertyLookUp.Insert(index, value);
             }
-            if (hasVerStr = propertyLookUp.Contains(PckFile.XMLVersionString))
+            if (hasVerStr = propertyLookUp.Contains(PckFile.XML_VERSION_STRING))
             {
                 int xmlVersion = reader.ReadInt32();
                 Console.WriteLine($"XML Version num: {xmlVersion}");

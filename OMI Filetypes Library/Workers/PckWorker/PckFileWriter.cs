@@ -32,11 +32,11 @@ namespace OMI.Workers.Pck
             using (var writer = new EndiannessAwareBinaryWriter(stream,
                 _byteOrder == ByteOrder.LittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode, true, _byteOrder))
             {
-                writer.Write(_pckFile.type);
+                writer.Write(_pckFile.Type);
 
                 writer.Write(_propertyList.Count + Convert.ToInt32(_pckFile.HasVerionString));
                 if(_pckFile.HasVerionString)
-                    _propertyList.Insert(0, PckFile.XMLVersionString);
+                    _propertyList.Insert(0, PckFile.XML_VERSION_STRING);
                 foreach (var entry in _propertyList)
                 {
                         writer.Write(_propertyList.IndexOf(entry));

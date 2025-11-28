@@ -4,34 +4,32 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OMI.Formats.Languages;
 
 namespace OMI.Formats.Pck
 {
     public class PckFile
     {
-        public readonly int type;
-        public const string XMLVersionString = "XMLVERSION";
+        public readonly int Type;
+        public const string XML_VERSION_STRING = "XMLVERSION";
         public bool HasVerionString => _hasVerionString;
         public int AssetCount => Assets.Count;
 
         private PckAssetCollection Assets { get; } = new PckAssetCollection();
         private bool _hasVerionString = false;
 
+        public PckFile(int type)
+        {
+            Type = type;
+        }
+
         public PckFile(int type, bool hasVersionStr)
             : this(type)
         {
-            SetVersion(hasVersionStr);
+            _hasVerionString = hasVersionStr;
         }
 
-        public PckFile(int type)
-        {
-            this.type = type;
-        }
-
-        public void SetVersion(bool enabled)
-        {
-            _hasVerionString = enabled;
-        }
+        public PckFile() : this(3) { }
 
         public List<string> GetPropertyList()
         {
