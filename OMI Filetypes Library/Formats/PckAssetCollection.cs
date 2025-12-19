@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace OMI.Formats.Pck
 {
-    public class FileCollection : IList<PckAsset>
+    public class PckAssetCollection : IList<PckAsset>
     {
         private OrderedDictionary _files = new OrderedDictionary();
         private ArrayList duplicates = new ArrayList();
@@ -51,15 +51,15 @@ namespace OMI.Formats.Pck
             {
                 if (this[value.Filename, value.Type].Equals(value))
                 {
-                    Debug.WriteLine($"Duplicate file: '{value.Filename}'", category: $"{nameof(FileCollection)}.{nameof(Add)}");
-                    Debug.WriteLine($"Merging '{value.Filename}' Properties", category: $"{nameof(FileCollection)}.{nameof(Add)}");
-                    PckAsset first = GetFile(value.Filename, value.Type);
+                    Debug.WriteLine($"Duplicate asset: '{value.Filename}'", category: $"{nameof(PckAssetCollection)}.{nameof(Add)}");
+                    Debug.WriteLine($"Merging '{value.Filename}' Properties", category: $"{nameof(PckAssetCollection)}.{nameof(Add)}");
+                    PckAsset first = GetAsset(value.Filename, value.Type);
                     first.Properties.Merge(value.Properties);
                     return;
                 }
                 var markedKey = key + value.GetHashCode().ToString();
                 Debug.WriteLine($"'{key}' is already present! Adding it as '{markedKey}'",
-                    category: $"{nameof(FileCollection)}.{nameof(Add)}");
+                    category: $"{nameof(PckAssetCollection)}.{nameof(Add)}");
                 duplicates.Add(markedKey);
 
                 _files.Add(markedKey, value);
@@ -68,7 +68,7 @@ namespace OMI.Formats.Pck
             _files.Add(key, value);
         }
 
-        internal PckAsset GetFile(string filename, PckAssetType assetType)
+        internal PckAsset GetAsset(string filename, PckAssetType assetType)
         {
             return _files[GetStorageKey(filename, assetType)] as PckAsset;
         }
@@ -90,12 +90,12 @@ namespace OMI.Formats.Pck
 
         public bool Contains(PckAssetType assetType)
         {
-            foreach (var file in _files.Values.Cast<PckAsset>())
-            {
-                if (file.Type == assetType)
-                    return true;
-            }
-            return false;
+            return _files.Values.Cast<PckAsset>().FirstOrDefault(asset => asset.Type == assetType) is not null;
+        }
+
+        public IEnumerable<PckAsset> GetByType(PckAssetType assetType)
+        {
+            return _files.Values.Cast<PckAsset>().Where(asset => asset.Type == assetType);
         }
 
         private object GetStorageKey(string key, PckAssetType assetType)
@@ -136,6 +136,11 @@ namespace OMI.Formats.Pck
             _ = item ?? throw new ArgumentNullException(nameof(item));
             _files.Insert(index, GetStorageKey(item), item);
         }
+        public void Insert(int index, PckAsset item, string filename, PckAssetType type)
+        {
+            _ = item ?? throw new ArgumentNullException(nameof(item));
+            _files.Insert(index, GetStorageKey(filename, type), item);
+        }
 
         internal bool Remove(string filename, PckAssetType assetType)
         {
@@ -172,12 +177,12 @@ namespace OMI.Formats.Pck
             duplicates.Clear();
         }
 
-        public void RemoveAll(Predicate<PckAsset> value)
+        public void RemoveAll(Predicate<PckAsset> predicate)
         {
             var valuesToRemove = new List<PckAsset>();
             foreach (PckAsset item in _files.Values)
             {
-                if (value(item))
+                if (predicate(item))
                     valuesToRemove.Add(item);
             }
             valuesToRemove.ForEach(v => Remove(v));
@@ -188,11 +193,11 @@ namespace OMI.Formats.Pck
             _files.RemoveAt(index);
         }
 
-        internal bool TryGetValue(string key, PckAssetType assetType, out PckAsset value)
+        internal bool TryGet(string key, PckAssetType assetType, out PckAsset value)
         {
             if (Contains(key, assetType))
             {
-                value = GetFile(key, assetType);
+                value = GetAsset(key, assetType);
                 return true;
             }
             value = null;

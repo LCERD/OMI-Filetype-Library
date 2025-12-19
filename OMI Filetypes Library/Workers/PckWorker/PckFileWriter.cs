@@ -9,19 +9,19 @@ namespace OMI.Workers.Pck
     public class PckFileWriter : IDataFormatWriter
     {
         private readonly PckFile _pckFile;
-        private readonly Endianness _endianness;
+        private readonly ByteOrder _byteOrder;
         private readonly IList<string> _propertyList;
 
-        public PckFileWriter(PckFile pckFile, Endianness endianness)
+        public PckFileWriter(PckFile pckFile, ByteOrder byteOrder)
         {
             _pckFile = pckFile;
-            _endianness = endianness;
+            _byteOrder = byteOrder;
             _propertyList = pckFile.GetPropertyList();
         }
 
         public void WriteToFile(string filename)
         {
-            using (var fs = File.OpenWrite(filename))
+            using (FileStream fs = File.Create(filename))
             {
                 WriteToStream(fs);
             }
@@ -30,43 +30,43 @@ namespace OMI.Workers.Pck
         public void WriteToStream(Stream stream)
         {
             using (var writer = new EndiannessAwareBinaryWriter(stream,
-                _endianness == Endianness.LittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode, true, _endianness))
+                _byteOrder == ByteOrder.LittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode, true, _byteOrder))
             {
-                writer.Write(_pckFile.type);
+                writer.Write(_pckFile.Type);
 
                 writer.Write(_propertyList.Count + Convert.ToInt32(_pckFile.HasVerionString));
+                if(_pckFile.HasVerionString)
+                    _propertyList.Insert(0, PckFile.XML_VERSION_STRING);
                 foreach (var entry in _propertyList)
                 {
-                    writer.Write(_propertyList.IndexOf(entry));
-                    WriteString(writer, entry);
-                };
+                        writer.Write(_propertyList.IndexOf(entry));
+                        WriteString(writer, entry);
+                }
                 if (_pckFile.HasVerionString)
                 {
-                    writer.Write(_propertyList.Count);
-                    WriteString(writer, PckFile.XMLVersionString);
                     writer.Write(1);
                 }
 
-                writer.Write(_pckFile.FileCount);
-                var files = _pckFile.GetFiles();
-                foreach (var file in files)
+                writer.Write(_pckFile.AssetCount);
+                IReadOnlyCollection<PckAsset> assets = _pckFile.GetAssets();
+                foreach (PckAsset asset in assets)
                 {
-                    writer.Write(file.Size);
-                    writer.Write((int)file.Type);
-                    WriteString(writer, file.Filename);
+                    writer.Write(asset.Size);
+                    writer.Write((int)asset.Type);
+                    WriteString(writer, asset.Filename);
                 }
 
-                foreach (var file in files)
+                foreach (PckAsset asset in assets)
                 {
-                    writer.Write(file.Properties.Count);
-                    foreach (var property in file.Properties)
+                    writer.Write(asset.Properties.Count);
+                    foreach (KeyValuePair<string, string> property in asset.Properties)
                     {
                         if (!_propertyList.Contains(property.Key))
                             throw new KeyNotFoundException("Property not found in Look Up Table: " + property.Key);
                         writer.Write(_propertyList.IndexOf(property.Key));
                         WriteString(writer, property.Value);
                     }
-                    writer.Write(file.Data);
+                    writer.Write(asset.Data);
                 }
             }
         }

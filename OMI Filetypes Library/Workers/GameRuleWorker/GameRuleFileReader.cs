@@ -28,7 +28,7 @@ namespace OMI.Workers.GameRule
         {
             if (File.Exists(filename))
             {
-                using (var fs = File.OpenRead(filename))
+                using (FileStream fs = File.OpenRead(filename))
                 {
                     return FromStream(fs);
                 }
@@ -38,9 +38,9 @@ namespace OMI.Workers.GameRule
 
         public GameRuleFile FromStream(Stream stream)
         {
-            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, Endianness.BigEndian))
+            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, ByteOrder.BigEndian))
             {
-                var header = ReadHeader(reader);
+                GameRuleFileHeader header = ReadHeader(reader);
                 _file = new GameRuleFile(header);
                 ReadBody(_file, reader);
             }
@@ -93,16 +93,16 @@ namespace OMI.Workers.GameRule
             //    compressedSize = reader.ReadInt32();
             //}
 
-            var decpompressedReader = reader;
+            EndiannessAwareBinaryReader decpompressedReader = reader;
             if (fileHeader.CompressionLevel > GameRuleFile.CompressionLevel.Compressed)
             {
-                using (var decompressedStream = DecompressStream(reader.BaseStream, decompressedSize, compressedSize))
+                using (Stream decompressedStream = DecompressStream(reader.BaseStream, decompressedSize, compressedSize))
                 {
                     var rlebufffer = new byte[(int)decompressedStream.Length];
                     decompressedStream.Read(rlebufffer, 0, (int)decompressedStream.Length);
                     byte[] decodedData = RLE.Decode(rlebufffer).ToArray();
                     var stream = new MemoryStream(decodedData);
-                    decpompressedReader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, Endianness.BigEndian);
+                    decpompressedReader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, ByteOrder.BigEndian);
                 }
             }
 
@@ -158,10 +158,10 @@ namespace OMI.Workers.GameRule
             for (int i = 0; i < count; i++)
             {
                 (string Name, int Count) parameter = (GetString(reader), reader.ReadInt32());
-                var rule = parent.AddRule(parameter.Name);
+                GameRuleFile.GameRule rule = parent.AddRule(parameter.Name);
                 for (int j = 0; j < parameter.Count; j++)
                 {
-                    rule.Parameters.Add(GetString(reader), ReadString(reader));
+                    rule.AddParameter(GetString(reader), ReadString(reader));
                 }
                 ReadGameRuleHierarchy(reader, rule);
             }

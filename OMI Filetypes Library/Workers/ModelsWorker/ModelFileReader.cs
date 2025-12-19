@@ -3,6 +3,7 @@ using System.Text;
 using System.IO;
 using OMI.Formats.Model;
 using System.Diagnostics;
+using System.Numerics;
 
 /*
 * all known Model/Material information is the direct product of MattNL's work! check em out! 
@@ -10,6 +11,37 @@ using System.Diagnostics;
 */
 namespace OMI.Workers.Model
 {
+    static class BinaryReaderExtensions
+    {
+        public static Vector2 ReadVector2(this BinaryReader reader)
+        {
+            float x = reader.ReadSingle();
+            float y = reader.ReadSingle();
+            return new Vector2(x, y);
+        }
+        
+        public static Vector2 ReadVector2I(this BinaryReader reader)
+        {
+            float x = reader.ReadInt32();
+            float y = reader.ReadInt32();
+            return new Vector2(x, y);
+        }
+
+        public static Vector3 ReadVector3(this BinaryReader reader)
+        {
+            Vector2 xy = reader.ReadVector2();
+            float z = reader.ReadSingle();
+            return new Vector3(xy, z);
+        }
+
+        public static Vector3 ReadVector3I(this BinaryReader reader)
+        {
+            Vector2 xy = reader.ReadVector2I();
+            int z = reader.ReadInt32();
+            return new Vector3(xy, z);
+        }
+    }
+
     public class ModelFileReader : IDataFormatReader<ModelContainer>, IDataFormatReader
     {
         public ModelContainer Read(byte[] data)
@@ -23,7 +55,7 @@ namespace OMI.Workers.Model
             if (File.Exists(filename))
             {
                 ModelContainer modelContainer = null;
-                using (var fs = File.OpenRead(filename))
+                using (FileStream fs = File.OpenRead(filename))
                 {
                     modelContainer = FromStream(fs);
                 }
@@ -35,66 +67,56 @@ namespace OMI.Workers.Model
         public ModelContainer FromStream(Stream stream)
         {
             var container = new ModelContainer();
-            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, true, Endianness.BigEndian))
+            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, true, ByteOrder.BigEndian))
             {
                 container.Version = reader.ReadInt32();
 
-                int NumOfModels = reader.ReadInt32();
+                int numOfModels = reader.ReadInt32();
 
-                for (int i = 0; i < NumOfModels; i++)
+                for (int i = 0; i < numOfModels; i++)
                 {
                     string modelName = ReadString(reader);
-                    Formats.Model.Model model = new Formats.Model.Model
-                    {
-                        Name = modelName,
-                        TextureSize = new System.Drawing.Size(reader.ReadInt32(), reader.ReadInt32())
-                    };
-                    int NumOfParts = reader.ReadInt32();
+                    int textureWidth = reader.ReadInt32();
+                    int textureHeight = reader.ReadInt32();
+                    Formats.Model.Model model = new Formats.Model.Model(modelName, new System.Drawing.Size(textureWidth, textureHeight));
+                    int numOfParts = reader.ReadInt32();
 
-                    for (int j = 0; j < NumOfParts; j++)
+                    for (int j = 0; j < numOfParts; j++)
                     {
-                        ModelPart part = new ModelPart();
-                        part.Name = ReadString(reader);
+                        string partName = ReadString(reader);
+                        string partParentName = string.Empty;
 
                         if(container.Version > 1)
                         {
-                            part.ParentName = ReadString(reader);
+                            partParentName = ReadString(reader);
                         }
 
-                        part.TranslationX = reader.ReadSingle();
-                        part.TranslationY = reader.ReadSingle();
-                        part.TranslationZ = reader.ReadSingle();
-                        part.UnknownFloat = reader.ReadSingle();
-                        part.TextureOffsetX = reader.ReadSingle();
-                        part.TextureOffsetY = reader.ReadSingle();
+                        Vector3 translation = reader.ReadVector3();
+                        Vector3 rotation = reader.ReadVector3();
+                        Vector3 additionalRotation = new Vector3();
 
                         if (container.Version > 0)
                         {
-                            part.RotationX = reader.ReadSingle();
-                            part.RotationY = reader.ReadSingle();
-                            part.RotationZ = reader.ReadSingle();
+                            additionalRotation = reader.ReadVector3();
                         }
 
-                        int NumOfBoxes = reader.ReadInt32();
+                        ModelPart part = new ModelPart(partName, partParentName, translation, rotation, additionalRotation);
 
-                        for (int x = 0; x < NumOfBoxes; x++)
+                        int numOfBoxes = reader.ReadInt32();
+
+                        for (int x = 0; x < numOfBoxes; x++)
                         {
-                            ModelBox box = new ModelBox();
-                            box.PositionX = reader.ReadSingle();
-                            box.PositionY = reader.ReadSingle();
-                            box.PositionZ = reader.ReadSingle();
-                            box.Length = reader.ReadInt32();
-                            box.Height = reader.ReadInt32();
-                            box.Width = reader.ReadInt32();
-                            box.UvX = reader.ReadSingle();
-                            box.UvY = reader.ReadSingle();
-                            box.Scale = reader.ReadSingle();
-                            box.Mirror = reader.ReadBoolean();
-                            part.Boxes.Add(box);
+                            Vector3 position = reader.ReadVector3();
+                            Vector3 size = reader.ReadVector3I();
+                            Vector2 uv = reader.ReadVector2();
+                            float inflate = reader.ReadSingle();
+                            bool mirror = reader.ReadBoolean();
+                            ModelBox box = new ModelBox(position, size, uv, inflate, mirror);
+                            part.AddBox(box);
                         }
-                        model.Parts.Add(part.Name, part);
+                        model.AddPart(part);
                     }
-                    container.Models.Add(modelName, model);
+                    container.Add(model);
                 }
             }
             return container;

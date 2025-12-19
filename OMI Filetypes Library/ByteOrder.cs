@@ -17,9 +17,9 @@
 **/
 namespace OMI
 {
-    public enum Endianness
+    public enum ByteOrder
     {
-        LittleEndian,
         BigEndian,
+        LittleEndian,
     }
 }

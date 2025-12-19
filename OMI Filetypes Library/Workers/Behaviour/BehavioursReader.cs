@@ -16,7 +16,7 @@ namespace OMI.Workers.Behaviour
         {
             if (File.Exists(filename))
             {
-                using (var fs = File.OpenRead(filename))
+                using (FileStream fs = File.OpenRead(filename))
                 {
                     return FromStream(fs);
                 }
@@ -28,7 +28,7 @@ namespace OMI.Workers.Behaviour
         {
             BehaviourFile behaviourFile = new BehaviourFile();
 
-            var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, leaveOpen: true, Endianness.BigEndian);
+            var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, leaveOpen: true, ByteOrder.BigEndian);
 
             _ = reader.ReadInt32();
             int riderPosOverrideCount = reader.ReadInt32();

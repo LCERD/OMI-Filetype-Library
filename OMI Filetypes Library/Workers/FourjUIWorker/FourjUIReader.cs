@@ -148,7 +148,7 @@ namespace OMI.Workers.FUI
             FuiFontName fontName = new FuiFontName();
             fontName.ID = reader.ReadInt32();
             fontName.Name = reader.ReadString(0x40);
-            reader.ReadBytes(0xc0); // unknown values
+            fontName.UnknownData = reader.ReadBytes(0xc0); // unknown values
             return fontName;
         }
 
@@ -159,7 +159,7 @@ namespace OMI.Workers.FUI
             edittext.Rectangle = ReadRect(reader);
             edittext.FontId = reader.ReadInt32();
             edittext.FontScale = reader.ReadSingle();
-            edittext.Color = GetColorFromRGBA(reader.ReadInt32());
+            edittext.Color = (reader.ReadUInt32());
             edittext.Alignment = reader.ReadInt32();
             edittext.Unknown3 = reader.ReadInt32();
             edittext.Unknown4 = reader.ReadInt32();
@@ -170,10 +170,6 @@ namespace OMI.Workers.FUI
             return edittext;
         }
 
-        private static System.Drawing.Color GetColorFromRGBA(int rgba)
-        {
-            return System.Drawing.Color.FromArgb(rgba & 0xff | rgba >> 8 & 0xffffff);
-        }
 
         private FuiReference ReadReference(EndiannessAwareBinaryReader reader)
         {
@@ -208,7 +204,7 @@ namespace OMI.Workers.FUI
             timelineEvent.ColorTransform.GreenAddTerm = reader.ReadSingle();
             timelineEvent.ColorTransform.BlueAddTerm = reader.ReadSingle();
             timelineEvent.ColorTransform.AlphaAddTerm = reader.ReadSingle();
-            timelineEvent.Color = GetColorFromRGBA(reader.ReadInt32());
+            timelineEvent.Color = (reader.ReadUInt32());
             return timelineEvent;
         }
 
@@ -247,7 +243,7 @@ namespace OMI.Workers.FUI
         {
             FuiShapeComponent shapeComponent = new FuiShapeComponent();
             shapeComponent.FillInfo.Type = (FuiFillStyle.FillType)reader.ReadInt32();
-            shapeComponent.FillInfo.Color = GetColorFromRGBA(reader.ReadInt32());
+            shapeComponent.FillInfo.Color = (reader.ReadUInt32());
             shapeComponent.FillInfo.BitmapIndex = reader.ReadInt32();
             shapeComponent.FillInfo.Matrix = ReadMatrix(reader);
             shapeComponent.VertIndex = reader.ReadInt32();

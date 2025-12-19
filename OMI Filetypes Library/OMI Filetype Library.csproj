@@ -43,9 +43,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Endianness.cs" />
+    <Compile Include="ByteOrder.cs" />
     <Compile Include="Extentions\EndiannessAwareBinaryExtention.cs" />
     <Compile Include="Formats\BehaviourFile.cs" />
+    <Compile Include="Formats\GhostRecord.cs" />
     <Compile Include="Formats\PckAssetType.cs" />
     <Compile Include="Formats\PckAsset.cs" />
     <Compile Include="Formats\FourjUserInterface.cs" />
@@ -55,7 +56,7 @@
     <Compile Include="EndiannessAwareBinaryWriter.cs" />
     <Compile Include="Formats\ModelNotFoundException.cs" />
     <Compile Include="Formats\PckFile.cs" />
-    <Compile Include="Formats\PckFile.FileCollection.cs" />
+    <Compile Include="Formats\PckAssetCollection.cs" />
     <Compile Include="Formats\PckFileProperties.cs" />
     <Compile Include="Workers\ArchiveWorker\ARCFileReader.cs" />
     <Compile Include="Workers\ArchiveWorker\ARCFileWriter.cs" />
@@ -74,6 +75,8 @@
     <Compile Include="Workers\GameRuleWorker\LzxDecoder.cs" />
     <Compile Include="Workers\GameRuleWorker\RLE.cs" />
     <Compile Include="Workers\GameRuleWorker\XMemDecompress.cs" />
+    <Compile Include="Workers\GhostRecordWorker\GhostRecordWriter.cs" />
+    <Compile Include="Workers\GhostRecordWorker\GhostRecordReader.cs" />
     <Compile Include="Workers\IDataFormatReader.cs" />
     <Compile Include="Workers\IDataFormatWriter.cs" />
     <Compile Include="Workers\LanguageWorker\LOCFileReader.cs" />

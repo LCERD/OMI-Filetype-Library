@@ -20,7 +20,7 @@ namespace OMI.Workers.Archive
 
         public void WriteToFile(string filename)
         {
-            using (var fs = File.OpenWrite(filename))
+            using (FileStream fs = File.OpenWrite(filename))
             {
                 WriteToStream(fs);
             }
@@ -28,11 +28,11 @@ namespace OMI.Workers.Archive
 
         public void WriteToStream(Stream stream)
         {
-            using (var writer = new EndiannessAwareBinaryWriter(stream, Endianness.BigEndian))
+            using (var writer = new EndiannessAwareBinaryWriter(stream, ByteOrder.BigEndian))
             {
                 writer.Write(_archive.Count);
                 int currentOffset = 4 + _archive.Keys.ToArray().Sum(key => 10 + key.Length);
-                foreach (var pair in _archive)
+                foreach (KeyValuePair<string, byte[]> pair in _archive)
                 {
                     int size = pair.Value.Length;
                     writer.Write((short)pair.Key.Length);

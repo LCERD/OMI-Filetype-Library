@@ -82,14 +82,5 @@ namespace OMI.Formats.Material
         }
 
         public int Version;
-        public bool hasInvalidEntries()
-        {
-            foreach(var mat in this)
-            {
-                if (!SupportedEntities.Contains(mat.Name) || !ValidMaterialTypes.Contains(mat.Type)) return true;
-            }
-
-            return false;
-        }
     }
 }

@@ -17,7 +17,7 @@ namespace OMI.Workers.Material
             if (File.Exists(filename))
             {
                 MaterialContainer modelContainer = null;
-                using (var fs = File.OpenRead(filename))
+                using (FileStream fs = File.OpenRead(filename))
                 {
                     modelContainer = FromStream(fs);
                 }
@@ -29,11 +29,11 @@ namespace OMI.Workers.Material
         public MaterialContainer FromStream(Stream stream)
         {
             var container = new MaterialContainer();
-            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, leaveOpen: true, Endianness.BigEndian))
+            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, leaveOpen: true, ByteOrder.BigEndian))
             {
                 container.Version = reader.ReadInt32();
-                int NumOfMaterials = reader.ReadInt32();
-                for (int i = 0; i < NumOfMaterials; i++)
+                int numberOfMaterials = reader.ReadInt32();
+                for (int i = 0; i < numberOfMaterials; i++)
                 {
                     string name = reader.ReadString(reader.ReadInt16());
                     string type = reader.ReadString(reader.ReadInt16());

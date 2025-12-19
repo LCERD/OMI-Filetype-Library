@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using OMI.Formats.Model;
 using OMI.Workers;
+using System.Numerics;
 /*
 * all known Model/Material information is the direct product of May/MattNL's work! check em out! 
 * https://github.com/MattN-L
@@ -12,6 +13,29 @@ using OMI.Workers;
 
 namespace OMI.Workers.Model
 {
+    static class BinaryWriterExtensions
+    {
+        public static void Write(this BinaryWriter writer, Vector2 vector2)
+        {
+            writer.Write(vector2.X);
+            writer.Write(vector2.Y);
+        }
+
+        public static void Write(this BinaryWriter writer, Vector3 vector3)
+        {
+            writer.Write(vector3.X);
+            writer.Write(vector3.Y);
+            writer.Write(vector3.Z);
+        }
+
+        public static void WriteVector3I(this BinaryWriter writer, Vector3 vector3)
+        {
+            writer.Write((int)vector3.X);
+            writer.Write((int)vector3.Y);
+            writer.Write((int)vector3.Z);
+        }
+    }
+
     public class ModelFileWriter : IDataFormatWriter
     {
         private int fileVersion;
@@ -25,7 +49,7 @@ namespace OMI.Workers.Model
 
         public void WriteToFile(string filename)
         {
-            using (var fs = File.OpenWrite(filename))
+            using (FileStream fs = File.OpenWrite(filename))
             {
                 WriteToStream(fs);
             }
@@ -33,18 +57,18 @@ namespace OMI.Workers.Model
 
         public void WriteToStream(Stream stream)
         {
-            using (var writer = new EndiannessAwareBinaryWriter(stream, Endianness.BigEndian))
+            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, ByteOrder.BigEndian))
             {
                 writer.Write(fileVersion);
-                writer.Write(container.Models.Count);
+                writer.Write(container.ModelCount);
 
-                foreach (Formats.Model.Model model in container.Models.Values)
+                foreach (Formats.Model.Model model in container)
                 {
                     WriteString(writer, model.Name);
                     writer.Write(model.TextureSize.Width);
                     writer.Write(model.TextureSize.Height);
-                    writer.Write(model.Parts.Count);
-                    foreach (ModelPart part in model.Parts.Values)
+                    writer.Write(model.PartCount);
+                    foreach (ModelPart part in model.GetParts())
                     {
                         WriteString(writer, part.Name);
                         if (fileVersion > 1)
@@ -52,31 +76,20 @@ namespace OMI.Workers.Model
                             // in case part doesn't have parent
                             WriteString(writer, part.ParentName ?? string.Empty);
                         }
-                        writer.Write(part.TranslationX);
-                        writer.Write(part.TranslationY);
-                        writer.Write(part.TranslationZ);
-                        writer.Write(part.UnknownFloat);
-                        writer.Write(part.TextureOffsetX);
-                        writer.Write(part.TextureOffsetY);
+                        writer.Write(part.Translation);
+                        writer.Write(part.Rotation);
 
                         if (fileVersion > 0)
                         {
-                            writer.Write(part.RotationX);
-                            writer.Write(part.RotationY);
-                            writer.Write(part.RotationZ);
+                            writer.Write(part.AdditionalRotation);
                         }
-                        writer.Write(part.Boxes.Count);
-                        foreach (var box in part.Boxes)
+                        writer.Write(part.BoxCount);
+                        foreach (ModelBox box in part.GetBoxes())
                         {
-                            writer.Write(box.PositionX);
-                            writer.Write(box.PositionY);
-                            writer.Write(box.PositionZ);
-                            writer.Write(box.Length);
-                            writer.Write(box.Height);
-                            writer.Write(box.Width);
-                            writer.Write(box.UvX);
-                            writer.Write(box.UvY);
-                            writer.Write(box.Scale);
+                            writer.Write(box.Position);
+                            writer.WriteVector3I(box.Size);
+                            writer.Write(box.Uv);
+                            writer.Write(box.Inflate);
                             writer.Write(box.Mirror);
 
                         }

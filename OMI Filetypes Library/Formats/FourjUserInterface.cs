@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -151,7 +153,7 @@ namespace OMI.Formats.FUI
             public short NameIndex;
             public Matrix3x2 Matrix;
             public FuiColorTransform ColorTransform = new FuiColorTransform();
-            public System.Drawing.Color Color;
+            public UInt32 Color;
         }
 
         public class FuiReference
@@ -170,7 +172,7 @@ namespace OMI.Formats.FUI
             public RectangleF Rectangle;
             public int FontId;
             public float FontScale;
-            public System.Drawing.Color Color;
+            public UInt32 Color;
             public int Alignment; // 0 - 3
             public int Unknown3;
             public int Unknown4;
@@ -190,6 +192,8 @@ namespace OMI.Formats.FUI
             /// Max size: 0x40
             /// </summary>
             public string Name;
+
+            public byte[] UnknownData;
         }
         
         public class FuiSymbol
@@ -226,6 +230,22 @@ namespace OMI.Formats.FUI
             /// Preserved
             /// </summary>
             public readonly int BindHandle = 0;
+
+            public byte[] ImageData;
+
+            public Image image;
+
+            public void ReverseRGB(Bitmap bmp)
+            {
+                for (int y = 0; y < bmp.Height; y++)
+                {
+                    for (int x = 0; x < bmp.Width; x++)
+                    {
+                        System.Drawing.Color col = bmp.GetPixel(x, y);
+                        bmp.SetPixel(x, y, System.Drawing.Color.FromArgb(col.A, col.B, col.G, col.R));
+                    }
+                }
+            }
         }
         
         public struct FuiColorTransform
@@ -250,7 +270,7 @@ namespace OMI.Formats.FUI
             }
 
             public FillType Type;
-            public System.Drawing.Color Color;
+            public UInt32 Color;
             public int BitmapIndex;
             public Matrix3x2 Matrix;
         }

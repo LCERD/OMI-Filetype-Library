@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Data;
 using System.IO.Compression;
+using System.Linq;
 using OMI.Workers.GameRule;
 
 namespace OMI.Formats.GameRule
 {
-    public class GameRuleFile
+    public sealed class GameRuleFile
     {
         public static readonly string[] ValidGameRules = new string[]
             {
@@ -96,9 +97,9 @@ namespace OMI.Formats.GameRule
 
         public enum CompressionLevel : byte
         {
-            None             = 0,
-            Compressed       = 1,
-            CompressedRle    = 2,
+            None = 0,
+            Compressed = 1,
+            CompressedRle = 2,
             CompressedRleCrc = 3,
         }
 
@@ -119,6 +120,45 @@ namespace OMI.Formats.GameRule
             XMem,
         }
 
+        public struct GameRuleParameter
+        {
+            public string Name;
+            public string Value;
+
+            public GameRuleParameter(string name, string value)
+            {
+                Name = name;
+                Value = value;
+            }
+
+            public static implicit operator GameRuleParameter(KeyValuePair<string, string> keyValuePair) => new GameRuleParameter(keyValuePair.Key, keyValuePair.Value);
+        }
+
+        public abstract class TParameter<T>
+        {
+            public readonly string Name;
+            public readonly T Value;
+
+            public TParameter(string name, T value)
+            {
+                Name = name;
+                Value = value;
+            }
+
+            protected virtual string GetFormattedValue() => Value.ToString();
+
+            public static implicit operator GameRuleParameter(TParameter<T> parameter) => new GameRuleParameter(parameter.Name, parameter.GetFormattedValue());
+        }
+
+        public sealed class IntParameter(string name, int value) : TParameter<int>(name, value) { }
+
+        public sealed class BoolParameter(string name, bool value) : TParameter<bool>(name, value)
+        {
+            protected override string GetFormattedValue() => Value.ToString().ToLower();
+        }
+
+        public sealed class FloatParameter(string name, float value) : TParameter<float>(name, value) { }
+
         /// <summary>
         /// Initializes a new <see cref="GameRuleFile"/> with the compression level set to <see cref="CompressionLevel.None"/>.
         /// </summary>
@@ -127,7 +167,7 @@ namespace OMI.Formats.GameRule
 
         public GameRuleFile(GameRuleFileHeader header)
         {
-            Root = new GameRule("__ROOT__", null);
+            Root = new GameRule("__ROOT__");
             Header = header;
         }
 
@@ -148,7 +188,7 @@ namespace OMI.Formats.GameRule
             Files.Add(new FileEntry(name, data));
         }
 
-        public class GameRule
+        public sealed class GameRule
         {
             /// <summary> Contains all valid Parameter names </summary>
             public static readonly string[] ValidParameters = new string[]
@@ -259,19 +299,30 @@ namespace OMI.Formats.GameRule
                 "beam_length",
             };
 
-            public string Name { get; set; } = string.Empty;
+            public string Name { get; } = string.Empty;
 
-            public GameRule Parent { get; } = null;
-            public Dictionary<string, string> Parameters { get; } = new Dictionary<string, string>();
-            public List<GameRule> ChildRules { get; } = new List<GameRule>();
+            public GameRule Parent => _parent;
+            private GameRule _parent = null;
+            private Dictionary<string, string> _parameters { get; } = new Dictionary<string, string>();
+            private List<GameRule> _childRules { get; } = new List<GameRule>();
 
             public GameRule(string name, GameRule parent)
             {
                 Name = name;
-                Parent = parent;
+                _parent = parent;
+            }
+
+            public GameRule(string name) : this(name, null)
+            {
             }
 
             public GameRule AddRule(string gameRuleName) => AddRule(gameRuleName, false);
+
+            public void AddRule(GameRule gameRule)
+            {
+                gameRule._parent = this;
+                _childRules.Add(gameRule);
+            }
 
             /// <summary>Adds a new gamerule</summary>
             /// <param name="gameRuleName">Name of the game rule</param>
@@ -282,32 +333,76 @@ namespace OMI.Formats.GameRule
                 if (validate && !ValidGameRules.Contains(gameRuleName))
                     throw new ArgumentException(gameRuleName + " is not a valid rule name.");
                 var rule = new GameRule(gameRuleName, this);
-                ChildRules.Add(rule);
+                _childRules.Add(rule);
                 return rule;
             }
 
-            public GameRule AddRule(string gameRuleName, params KeyValuePair<string,string>[] parameters)
+            public GameRule AddRule(string gameRuleName, params GameRuleParameter[] parameters)
             {
-                var rule = AddRule(gameRuleName);
-                if (rule is null)
-                    throw new InvalidOperationException($"Game rule name '{gameRuleName}' is not valid.");
-                foreach(var param in parameters)
-                { 
-                    rule.Parameters[param.Key] = param.Value;
-                }
+                GameRule rule = AddRule(gameRuleName) ?? throw new InvalidOperationException($"Game rule name '{gameRuleName}' is not valid.");
+                rule.AddParameters(parameters);
                 return rule;
             }
+
+            public void AddRules(IEnumerable<GameRule> gameRules)
+            {
+                foreach (GameRule gameRule in gameRules)
+                {
+                    AddRule(gameRule);
+                }
+            }
+
+            public void AddParameter(string name, string value) => _parameters.Add(name, value);
+
+            public void AddParameter(GameRuleParameter parameter) => AddParameter(parameter.Name, parameter.Value);
+
+            public void AddParameters(params GameRuleParameter[] parameters)
+            {
+                foreach (GameRuleParameter parameter in parameters)
+                {
+                    AddParameter(parameter);
+                }
+            }
+
+            public IReadOnlyCollection<GameRule> GetRules() => _childRules;
+
+            public bool TryGetRule(string gameRuleName, out GameRule rule)
+            {
+                rule = _childRules.Find(rule => rule.Name == gameRuleName);
+                return rule != null; 
+            }
+
+            public bool HasRule(string gameRuleName) => _childRules.Find(rule => rule.Name == gameRuleName) is not null;
+
+            public GameRule GetRule(string gameRuleName) => _childRules.Find(rule => rule.Name == gameRuleName);
+
+            public string GetParameterValue(string parameterName) => _parameters.TryGetValue(parameterName, out string value) ? value : string.Empty;
+            
+            public bool TryGetParameterValue(string parameterName, out string value) => _parameters.TryGetValue(parameterName, out value);
+
+            public bool RemoveRule(GameRule rule) => _childRules.Remove(rule);
+
+            public IReadOnlyCollection<KeyValuePair<string, string>> GetParameters() => _parameters.ToArray();
+
+            public bool ContainsParameter(string parameterName) => _parameters.ContainsKey(parameterName);
+
+            public bool RemoveParameter(string parameterName) => _parameters.Remove(parameterName);
+
+            public void SetParameter(string parameterName, string parameterValue) => _parameters[parameterName] = parameterValue;
         }
 
-        public void AddGameRules(IEnumerable<GameRule> gameRules) => Root.ChildRules.AddRange(gameRules);
-        
+        public void AddGameRules(IEnumerable<GameRule> gameRules) => Root.AddRules(gameRules);
+
         public GameRule AddRule(string gameRuleName)
             => AddRule(gameRuleName, false);
+
+        public void AddRule(GameRule gameRule)
+            => Root.AddRule(gameRule);
 
         public GameRule AddRule(string gameRuleName, bool validate)
             => Root.AddRule(gameRuleName, validate);
 
-        public GameRule AddRule(string gameRuleName, params KeyValuePair<string, string>[] parameters)
+        public GameRule AddRule(string gameRuleName, params GameRuleParameter[] parameters)
             => Root.AddRule(gameRuleName, parameters);
     }
 }

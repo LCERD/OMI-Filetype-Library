@@ -20,7 +20,7 @@ namespace OMI.Workers.Language
 
         public void WriteToFile(string filename)
         {
-            using(var fs = File.OpenWrite(filename))
+            using (FileStream fs = File.OpenWrite(filename))
             {
                 WriteToStream(fs);
             }
@@ -28,7 +28,7 @@ namespace OMI.Workers.Language
 
         public void WriteToStream(Stream stream)
         {
-            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.UTF8, leaveOpen: true, Endianness.BigEndian))
+            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.UTF8, leaveOpen: true, ByteOrder.BigEndian))
             {
                 writer.Write(_version);
                 writer.Write(_locfile.Languages.Count);
@@ -71,7 +71,7 @@ namespace OMI.Workers.Language
                     size += sizeof(short) + writer.EncodingScheme.GetByteCount(_locfile.LocKeys[locKey][language]); // loc value string
                 }
                 writer.Write(size);
-            };
+            }
         }
 
         private void WriteLanguageEntries(EndiannessAwareBinaryWriter writer)
@@ -90,7 +90,7 @@ namespace OMI.Workers.Language
                         WriteString(writer, locKey);
                     WriteString(writer, _locfile.LocKeys[locKey][language]);
                 }
-            };
+            }
         }
 
         private void WriteString(EndiannessAwareBinaryWriter writer, string s)
