@@ -52,9 +52,9 @@ namespace OMI.Workers.FUI
         public FourjUserInterface FromStream(Stream stream)
         {
             FourjUserInterface uiContainer = new FourjUserInterface();
-            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, Endianness.LittleEndian))
+            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, ByteOrder.LittleEndian))
             {
-                var signature = reader.ReadInt64(Endianness.BigEndian);
+                var signature = reader.ReadInt64(ByteOrder.BigEndian);
                 var contentSize = reader.ReadInt32();
                 var swfFileName = reader.ReadString(0x40);
 
@@ -138,7 +138,7 @@ namespace OMI.Workers.FUI
         {
             FuiSymbol symbol = new FuiSymbol();
             symbol.Name = reader.ReadString(0x40);
-            symbol.ObjectType = (fuiObject_eFuiObjectType)reader.ReadInt32();
+            symbol.ObjectType = (fuiObjectType)reader.ReadInt32();
             symbol.Index = reader.ReadInt32();
             return symbol;
         }
@@ -159,7 +159,7 @@ namespace OMI.Workers.FUI
             edittext.Rectangle = ReadRect(reader);
             edittext.FontId = reader.ReadInt32();
             edittext.FontScale = reader.ReadSingle();
-            edittext.Color = (reader.ReadUInt32());
+            edittext.Color = ReadColor(reader);
             edittext.Alignment = reader.ReadInt32();
             edittext.Unknown3 = reader.ReadInt32();
             edittext.Unknown4 = reader.ReadInt32();
@@ -189,7 +189,7 @@ namespace OMI.Workers.FUI
         {
             FuiTimelineEvent timelineEvent = new FuiTimelineEvent();
             timelineEvent.EventType = (FuiTimelineEvent.EventFlags)reader.ReadInt16();
-            timelineEvent.ObjectType = (fuiObject_eFuiObjectType)reader.ReadByte();
+            timelineEvent.ObjectType = (fuiObjectType)reader.ReadByte();
             _ = reader.ReadByte();
             timelineEvent.Unknown0 = reader.ReadInt16();
             timelineEvent.Index = reader.ReadInt16();
@@ -204,7 +204,7 @@ namespace OMI.Workers.FUI
             timelineEvent.ColorTransform.GreenAddTerm = reader.ReadSingle();
             timelineEvent.ColorTransform.BlueAddTerm = reader.ReadSingle();
             timelineEvent.ColorTransform.AlphaAddTerm = reader.ReadSingle();
-            timelineEvent.Color = (reader.ReadUInt32());
+            timelineEvent.Color = ReadColor(reader);
             return timelineEvent;
         }
 
@@ -239,11 +239,17 @@ namespace OMI.Workers.FUI
             return result;
         }
 
+        private System.Drawing.Color ReadColor(EndiannessAwareBinaryReader reader)
+        {
+            uint rgba = reader.ReadUInt32();
+            return System.Drawing.Color.FromArgb((int)(((rgba & 0xff) << 24) | ((rgba & 0xffffff00) >> 8)));
+        }
+
         private FuiShapeComponent ReadShapeComponent(EndiannessAwareBinaryReader reader)
         {
             FuiShapeComponent shapeComponent = new FuiShapeComponent();
             shapeComponent.FillInfo.Type = (FuiFillStyle.FillType)reader.ReadInt32();
-            shapeComponent.FillInfo.Color = (reader.ReadUInt32());
+            shapeComponent.FillInfo.Color = ReadColor(reader);
             shapeComponent.FillInfo.BitmapIndex = reader.ReadInt32();
             shapeComponent.FillInfo.Matrix = ReadMatrix(reader);
             shapeComponent.VertIndex = reader.ReadInt32();

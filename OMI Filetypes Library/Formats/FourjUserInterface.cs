@@ -146,14 +146,14 @@ namespace OMI.Formats.FUI
                 _special = 0x8005,
             }
             public EventFlags EventType;
-            public fuiObject_eFuiObjectType ObjectType;
+            public fuiObjectType ObjectType;
             public short Unknown0;
             public short Index;
             public short Unknown1;
             public short NameIndex;
             public Matrix3x2 Matrix;
             public FuiColorTransform ColorTransform = new FuiColorTransform();
-            public UInt32 Color;
+            public System.Drawing.Color Color;
         }
 
         public class FuiReference
@@ -172,7 +172,7 @@ namespace OMI.Formats.FUI
             public RectangleF Rectangle;
             public int FontId;
             public float FontScale;
-            public UInt32 Color;
+            public System.Drawing.Color Color;
             public int Alignment; // 0 - 3
             public int Unknown3;
             public int Unknown4;
@@ -202,7 +202,7 @@ namespace OMI.Formats.FUI
             /// Max size: 0x40
             /// </summary>
             public string Name;
-            public fuiObject_eFuiObjectType ObjectType;
+            public fuiObjectType ObjectType;
             public int Index;
         }
 
@@ -230,22 +230,6 @@ namespace OMI.Formats.FUI
             /// Preserved
             /// </summary>
             public readonly int BindHandle = 0;
-
-            public byte[] ImageData;
-
-            public Image image;
-
-            public void ReverseRGB(Bitmap bmp)
-            {
-                for (int y = 0; y < bmp.Height; y++)
-                {
-                    for (int x = 0; x < bmp.Width; x++)
-                    {
-                        System.Drawing.Color col = bmp.GetPixel(x, y);
-                        bmp.SetPixel(x, y, System.Drawing.Color.FromArgb(col.A, col.B, col.G, col.R));
-                    }
-                }
-            }
         }
         
         public struct FuiColorTransform
@@ -270,12 +254,12 @@ namespace OMI.Formats.FUI
             }
 
             public FillType Type;
-            public UInt32 Color;
+            public System.Drawing.Color Color;
             public int BitmapIndex;
             public Matrix3x2 Matrix;
         }
         
-        public enum fuiObject_eFuiObjectType
+        public enum fuiObjectType
         {
             STAGE = 0,
             SHAPE = 1,

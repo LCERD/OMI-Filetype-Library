@@ -44,7 +44,7 @@ namespace OMI.Workers.FUI
 
         public void WriteToStream(Stream stream)
         {
-            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, Endianness.LittleEndian))
+            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, ByteOrder.LittleEndian))
             {
                 writer.Write(_UIContainer.Header.Signature);
 
@@ -215,11 +215,6 @@ namespace OMI.Workers.FUI
         {
             int argb = color.ToArgb();
             return (argb & 0xffffff) << 8 | argb >> 24 & 0xff;
-        }
-
-        private void WriteByte(Stream stream, byte b)
-        {
-            stream.WriteByte(b);
         }
     }
 }
