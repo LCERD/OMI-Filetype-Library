@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
@@ -32,11 +33,6 @@ namespace OMI.Formats.FUI
         public List<string> ImportAssets;
         public List<Components.FuiBitmap> Bitmaps;
         public List<byte[]> ImagesData = new List<byte[]>();
-
-        public FourjUserInterface()
-        {
-            Header = new Components.FuiHeader();
-        }
     }
 
     namespace Components
@@ -48,10 +44,18 @@ namespace OMI.Formats.FUI
 
             public byte Version => (byte)(Signature >> 56 & 0xff);
 
-            public long Signature;
-            public int ContentSize;
-            public string SwfFileName;
-            public FuiRect FrameSize = new FuiRect();
+            public readonly long Signature;
+            public readonly int ContentSize;
+            public readonly string SwfFileName;
+            public readonly RectangleF FrameSize;
+
+            public FuiHeader(long signature, int contentSize, string swfFileName, RectangleF frameSize)
+            {
+                Signature = signature;
+                ContentSize = contentSize;
+                SwfFileName = swfFileName;
+                FrameSize = frameSize;
+            }
 
             public override string ToString()
             {
@@ -69,13 +73,27 @@ namespace OMI.Formats.FUI
             public short FrameCount;
             public short ActionIndex;
             public short ActionCount;
-            public FuiRect Rectangle = new FuiRect();
+            public RectangleF Area;
         }
 
         public class FuiTimelineAction
         {
-            public byte ActionType;
-            public byte Unknown;
+            public enum ActionType : ushort
+            {
+                HandleEvent = 0,
+                Pause = 1,
+                SetFrame = 2,
+                SetFrameAndStart = 3,
+                SetTabIndex = 4, //! Set StringArg1 to a valid number (e.g. 1-9)
+                DoActionOn = 9,  //! Set StringArg1 specific to object used (e.g. List, Label, etc.)
+
+                SetValue = 16,
+                SetVisible = 17,
+                DoListAction = 29, //! Calls 'FJ_List::setAction' or 'FJ_List2D::setAction'
+                SelectFrame = 30, //! ?
+            }
+
+            public ActionType Type;
             public short FrameIndex;
             public string StringArg0;
             public string StringArg1;
@@ -83,10 +101,10 @@ namespace OMI.Formats.FUI
 
         public class FuiShape
         {
-            public int Unknown;
+            internal int Unknown;
             public int ShapeComponentIndex;
             public int ShapeComponentCount;
-            public FuiRect Rectangle = new FuiRect();
+            public RectangleF Area;
         }
 
         public class FuiShapeComponent
@@ -106,22 +124,39 @@ namespace OMI.Formats.FUI
             public int EventCount;
         }
 
+
         public class FuiTimelineEvent
         {
-            public short EventType;
-            public short ObjectType;
+            // TODO: add missing event flags
+            [Flags]
+            public enum EventFlags : ushort
+            {
+                None      = 0x00,
+                Start     = 0x01,
+                Stop      = 0x02,
+                PlayFrame = 0x04,
+                unk_0x08  = 0x08,
+                
+                unk_0x10  = 0x10,
+                unk_0x20  = 0x20,
+                unk_0x40  = 0x40,
+                unk_0x80  = 0x80,
+                _special = 0x8005,
+            }
+            public EventFlags EventType;
+            public fuiObject_eFuiObjectType ObjectType;
             public short Unknown0;
             public short Index;
             public short Unknown1;
             public short NameIndex;
-            public FuiMatrix Matrix;
+            public Matrix3x2 Matrix;
             public FuiColorTransform ColorTransform = new FuiColorTransform();
             public System.Drawing.Color Color;
         }
 
         public class FuiReference
         {
-            public int SymbolIndex;
+            internal int SymbolIndex;
             /// <summary>
             /// Max size: 0x40
             /// </summary>
@@ -131,8 +166,8 @@ namespace OMI.Formats.FUI
 
         public class FuiEdittext
         {
-            public int Unknown0;
-            public FuiRect Rectangle = new FuiRect();
+            internal int Unknown0;
+            public RectangleF Rectangle;
             public int FontId;
             public float FontScale;
             public System.Drawing.Color Color;
@@ -163,7 +198,7 @@ namespace OMI.Formats.FUI
             /// Max size: 0x40
             /// </summary>
             public string Name;
-            public int ObjectType;
+            public fuiObject_eFuiObjectType ObjectType;
             public int Index;
         }
 
@@ -192,30 +227,6 @@ namespace OMI.Formats.FUI
             /// </summary>
             public readonly int BindHandle = 0;
         }
-
-        public struct FuiRect
-        {
-            public Vector2 Min;
-            public Vector2 Max;
-
-            public float Width => Max.X - Min.X;
-            public float Height => Max.Y - Min.Y;
-
-            public SizeF Size => new SizeF(Width, Height);
-
-            public override string ToString()
-            {
-                return Size.ToString();
-            }
-        }
-
-        public struct FuiMatrix
-        {
-            public SizeF Scale;
-            public float RotateSkew0;
-            public float RotateSkew1;
-            public PointF Translation;
-        }
         
         public struct FuiColorTransform
         {
@@ -241,10 +252,10 @@ namespace OMI.Formats.FUI
             public FillType Type;
             public System.Drawing.Color Color;
             public int BitmapIndex;
-            public FuiMatrix Matrix;
+            public Matrix3x2 Matrix;
         }
         
-        internal enum fuiObject_eFuiObjectType
+        public enum fuiObject_eFuiObjectType
         {
             STAGE = 0,
             SHAPE = 1,
