@@ -16,15 +16,15 @@
  * 3. This notice may not be removed or altered from any source distribution.
 **/
 using System;
-using System.IO;
-using System.Text;
-using System.Drawing;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Numerics;
+using System.Text;
 using OMI.Extentions;
 using OMI.Formats.FUI;
 using OMI.Formats.FUI.Components;
-using System.Numerics;
 /*
 * all known FourJUserInterface information is the direct product of Miku-666(NessieHax)'s work! check em out! 
 * https://github.com/NessieHax
@@ -147,8 +147,7 @@ namespace OMI.Workers.FUI
         {
             FuiFontName fontName = new FuiFontName();
             fontName.ID = reader.ReadInt32();
-            fontName.Name = reader.ReadString(0x40);
-            fontName.UnknownData = reader.ReadBytes(0xc0); // unknown values
+            fontName.Name = reader.ReadString(0x100);
             return fontName;
         }
 
@@ -160,11 +159,11 @@ namespace OMI.Workers.FUI
             edittext.FontId = reader.ReadInt32();
             edittext.FontScale = reader.ReadSingle();
             edittext.Color = ReadColor(reader);
-            edittext.Alignment = reader.ReadInt32();
+            edittext.Alignment = (FuiEdittext.TextAlignment)reader.ReadInt32();
             edittext.Unknown3 = reader.ReadInt32();
             edittext.Unknown4 = reader.ReadInt32();
             edittext.Unknown5 = reader.ReadInt32();
-            edittext.Unknown6 = reader.ReadInt32();
+            edittext.Unknown6 = reader.ReadSingle();
             edittext.Unknown7 = reader.ReadInt32();
             edittext.htmlSource = reader.ReadString(0x100);
             return edittext;

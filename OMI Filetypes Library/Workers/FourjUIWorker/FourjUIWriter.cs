@@ -169,7 +169,7 @@ namespace OMI.Workers.FUI
                     writer.Write(edittext.FontId);
                     writer.Write(edittext.FontScale);
                     writer.Write(GetRGBAFromColor(edittext.Color));
-                    writer.Write(edittext.Alignment);
+                    writer.Write((int)edittext.Alignment);
                     writer.Write(edittext.Unknown3);
                     writer.Write(edittext.Unknown4);
                     writer.Write(edittext.Unknown5);

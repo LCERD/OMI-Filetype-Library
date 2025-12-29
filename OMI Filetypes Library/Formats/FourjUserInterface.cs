@@ -51,9 +51,14 @@ namespace OMI.Formats.FUI
             public readonly string SwfFileName;
             public readonly RectangleF FrameSize;
 
+            public FuiHeader(string swfFileName, RectangleF frameSize)
+                : this(DefaultSignature, 0, swfFileName, frameSize)
+            {
+
+            }
+
             public FuiHeader(long signature, int contentSize, string swfFileName, RectangleF frameSize)
             {
-                Signature = signature;
                 ContentSize = contentSize;
                 SwfFileName = swfFileName;
                 FrameSize = frameSize;
@@ -82,11 +87,15 @@ namespace OMI.Formats.FUI
         {
             public enum ActionType : ushort
             {
-                HandleEvent = 0,
+                HandleEvent = 0, // handleAnimationStep, UpdateLabel, InitHud, AnimationEnd, ShowTimerAnimation, SlideComplete, ShowAnimatedLogoText
                 Pause = 1,
                 SetFrame = 2,
                 SetFrameAndStart = 3,
                 SetTabIndex = 4, //! Set StringArg1 to a valid number (e.g. 1-9)
+                SetLabelPadding = 5, //! ??
+                SetLabelProperty0 = 6,
+                SetLabelProperty1 = 7,
+                SetLabelProperty2 = 8,
                 DoActionOn = 9,  //! Set StringArg1 specific to object used (e.g. List, Label, etc.)
 
                 SetValue = 16,
@@ -143,7 +152,9 @@ namespace OMI.Formats.FUI
                 unk_0x20  = 0x20,
                 unk_0x40  = 0x40,
                 unk_0x80  = 0x80,
-                _special = 0x8005,
+
+                _special0 = 0x8005,
+                _special1 = 0x8009,
             }
             public EventFlags EventType;
             public fuiObjectType ObjectType;
@@ -168,16 +179,23 @@ namespace OMI.Formats.FUI
 
         public class FuiEdittext
         {
+            public enum TextAlignment : int
+            {
+                Left = 0,
+                Right = 1,
+                Center = 2,
+            }
+
             internal int Unknown0;
             public RectangleF Rectangle;
             public int FontId;
             public float FontScale;
             public System.Drawing.Color Color;
-            public int Alignment; // 0 - 3
+            public TextAlignment Alignment; // 0 - 3
             public int Unknown3;
             public int Unknown4;
             public int Unknown5;
-            public int Unknown6;
+            public float Unknown6;
             public int Unknown7;
             /// <summary>
             /// Max size: 0x100
@@ -189,11 +207,9 @@ namespace OMI.Formats.FUI
         {
             public int ID;
             /// <summary>
-            /// Max size: 0x40
+            /// Max size: 0x100
             /// </summary>
             public string Name;
-
-            public byte[] UnknownData;
         }
         
         public class FuiSymbol
