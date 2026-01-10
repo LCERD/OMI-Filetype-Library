@@ -8,20 +8,33 @@ namespace OMI.Extentions
 {
     internal static class EndiannessAwareBinaryExtention
     {
-        internal static void Empty<T>(this EndiannessAwareBinaryWriter writer, List<T> list, Action<EndiannessAwareBinaryWriter, T> writeItem)
+        internal static void WriteItemCollection<T>(this EndiannessAwareBinaryWriter writer, ICollection<T> collection, Action<EndiannessAwareBinaryWriter, T> writeItem)
         {
-            foreach (var item in list)
+            foreach (T item in collection)
             {
                 writeItem.Invoke(writer, item);
             }
         }
 
-        internal static void Fill<T>(this EndiannessAwareBinaryReader reader, List<T> list, Func<EndiannessAwareBinaryReader, T> readItemFunc)
+        internal static void Fill<T>(this EndiannessAwareBinaryReader reader, ICollection<T> list, int count, Func<EndiannessAwareBinaryReader, T> readItemFunc)
         {
-            for (int i = 0; i < list.Capacity; i++)
+            for (int i = 0; i < count; i++)
             {
+                if (list.GetType().IsArray)
+                {
+                    ((T[])list)[i] = readItemFunc(reader);
+                    continue;
+                }
                 list.Add(readItemFunc(reader));
             }
+        }
+
+        internal static void FillAtOffset<T>(this EndiannessAwareBinaryReader reader, ICollection<T> list, int count, long offset, Func<EndiannessAwareBinaryReader, T> readItemFunc)
+        {
+            long origin = reader.BaseStream.Position;
+            reader.BaseStream.Position = offset;
+            reader.Fill(list, count, readItemFunc);
+            reader.BaseStream.Position = origin;
         }
     }
 }
