@@ -4,6 +4,7 @@
  * See License usage at the bottom of file!
 */
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
@@ -23,16 +24,31 @@ namespace OMI.Formats.FUI
                                   // dest
         ]);
 
-        public static void ReverseColorRB(this Image img)
+        public static Image ReverseColorRB(this Image img)
         {
             Size s = img.Size;
             ImageAttributes imageAttributes = new ImageAttributes();
             imageAttributes.SetColorMatrix(r2b_mat, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+            if (img.PixelFormat != PixelFormat.Format32bppArgb)
+            {
+                // Source - https://stackoverflow.com/a/2016509
+                // Posted by Hans Passant, modified by community. See post 'Timeline' for change history
+                // Retrieved 2026-01-10, License - CC BY-SA 3.0
+
+                Bitmap clone = new Bitmap(img.Width, img.Height, PixelFormat.Format32bppArgb);
+                using (Graphics gr = Graphics.FromImage(clone))
+                {
+                    gr.DrawImage(img, 0, 0);
+                }
+                img = clone;
+            }
+
             using (Graphics g = Graphics.FromImage(img))
             {
                 g.DrawImage(img, new Rectangle(Point.Empty, s), 0, 0, s.Width, s.Height, GraphicsUnit.Pixel, imageAttributes);
             }
             imageAttributes.Dispose();
+            return img;
         }
 
         public static Image SetAlphaData(this Image img, byte[] alphaData)

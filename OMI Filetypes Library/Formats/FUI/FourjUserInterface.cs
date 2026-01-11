@@ -3,8 +3,11 @@
  * https://github.com/NessieHax
  * See License usage at the bottom of file!
 */
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 
 namespace OMI.Formats.FUI
@@ -67,10 +70,12 @@ namespace OMI.Formats.FUI
 
         public bool SetSymbol(string name, Image image, FuiBitmap.FuiImageFormat fuiImageFormat = FuiBitmap.FuiImageFormat.PNG_WITH_ALPHA_DATA)
         {
-            if (image is null)
-                return false;
+            _ = image ?? throw new ArgumentNullException(nameof(image));
             if (Symbols.Find(sym => sym.Name == name) is not FuiSymbol symbol)
+            {
+                Debugger.Break();
                 return false;
+            }
             switch (symbol.ObjectType)
             {
                 case fuiObjectType.BITMAP:
@@ -82,6 +87,7 @@ namespace OMI.Formats.FUI
                     Bitmaps.Add(new FuiBitmap(image, fuiImageFormat, symbol.Index));
                     return true;
                 default:
+                    Debugger.Break();
                     return false;
             }
         }

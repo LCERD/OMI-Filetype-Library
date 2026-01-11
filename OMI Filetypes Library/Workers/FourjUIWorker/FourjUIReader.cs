@@ -183,7 +183,7 @@ namespace OMI.Workers.FUI
             Image img = Image.FromStream(imgBufferStream);
 
             if (imageFormat <= FuiBitmap.FuiImageFormat.PNG_NO_ALPHA_DATA)
-                img.ReverseColorRB();
+                img = img.ReverseColorRB();
             if (imageFormat == FuiBitmap.FuiImageFormat.JPEG_WITH_ALPHA_DATA && zlibDataOffset > -1)
             {
                 int bufferSize = size - zlibDataOffset;
@@ -311,15 +311,13 @@ namespace OMI.Workers.FUI
 
         private static Matrix3x2 ReadMatrix(EndiannessAwareBinaryReader reader)
         {
-            float scaleX = reader.ReadSingle();
-            float scaleY = reader.ReadSingle();
-            Matrix3x2 result = Matrix3x2.CreateScale(scaleX, scaleY);
-            float rotateSkewX = reader.ReadSingle();
-            float rotateSkewY = reader.ReadSingle();
-            result += Matrix3x2.CreateSkew(rotateSkewX, rotateSkewY);
-            float trX = reader.ReadSingle();
-            float trY = reader.ReadSingle();
-            result.Translation = new Vector2(trX, trY);
+            Matrix3x2 result = Matrix3x2.Identity;
+            result.M11 = reader.ReadSingle();
+            result.M12 = reader.ReadSingle();
+            result.M21 = reader.ReadSingle();
+            result.M22 = reader.ReadSingle();
+            result.M31 = reader.ReadSingle();
+            result.M32 = reader.ReadSingle();
             return result;
         }
 

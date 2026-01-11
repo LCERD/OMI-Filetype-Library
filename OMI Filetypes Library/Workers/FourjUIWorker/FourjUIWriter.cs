@@ -195,56 +195,85 @@ namespace OMI.Workers.FUI
                     writer.WriteString(importAssetName, 0x40);
                 }
 
-                MemoryStream imageStream = new MemoryStream();
+                List<byte[]> imgData = new List<byte[]>(0x1000);
+                Debug.WriteLine($"bitmap count: {_UIContainer.Bitmaps.Count}");
+                Debug.WriteLine($"stream pos before: 0x{writer.BaseStream.Position:X}");
                 foreach (FuiBitmap bitmap in _UIContainer.Bitmaps)
                 {
                     writer.Write((int)bitmap.SymbolIndex);
                     writer.Write((int)bitmap.ImageFormat);
                     writer.Write((int)bitmap.Image.Width);
                     writer.Write((int)bitmap.Image.Height);
-                    writer.Write((int)imageStream.Position); // offset
+                    int offset = imgData.Select(b => b.Length).Sum();
+                    //Debug.WriteLine($"offset: 0x{offset:X}");
+                    writer.Write((int)offset); // offset
 
-                    if (bitmap.ImageFormat <= FuiBitmap.FuiImageFormat.PNG_NO_ALPHA_DATA)
-                    {
-                        bitmap.Image.ReverseColorRB();
-                        //var x = new EncoderParameters();
-                        //x.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.ColorDepth, 32);
-                        bitmap.Image.Save(imageStream, ImageFormat.Png);
-                        writer.Write((int)imageStream.Position); // size
-                        writer.Write((int)0); // ZlibDataOffset
-                        //! Bind handle need to be set to zero!
-                        writer.Write((int)0);
-                        continue;
-                    }
-                    bitmap.Image.Save(imageStream, ImageFormat.Jpeg);
-                    if (bitmap.ImageFormat == FuiBitmap.FuiImageFormat.JPEG_WITH_ALPHA_DATA)
-                    {
-                        byte[] alphaData = bitmap.Image.GetAlphaData();
-                        DeflaterOutputStream decompressedStream = new DeflaterOutputStream(imageStream);
-                        decompressedStream.Write(alphaData, 0, alphaData.Length);
-                        decompressedStream.Finish();
-                        decompressedStream.Dispose();
-                    }
-                    writer.Write((int)imageStream.Position); // size
+                    int zlibOffset = -1;
+                    byte[] imgBuffer = MakeImage(bitmap.Image, bitmap.ImageFormat, out zlibOffset);
 
-                    // ZlibDataOffset 
-                    writer.Write(bitmap.ImageFormat == FuiBitmap.FuiImageFormat.JPEG_WITH_ALPHA_DATA ? (int)imageStream.Position : 0);
-
+                    imgData.Add(imgBuffer);
+                    int size = imgBuffer.Length;
+                    //Debug.WriteLine($"size: 0x{size:X}");
+                    writer.Write((int)size); // size
+                    //Debug.WriteLine($"zlibOffset: 0x{zlibOffset:X}");
+                    writer.Write((int)zlibOffset); // ZlibDataOffset
                     //! Bind handle need to be set to zero!
                     writer.Write((int)0);
                 }
-                imageStream.Flush();
-                var imageData = imageStream.GetBuffer();
-                long imageBufferStartOffset = writer.BaseStream.Position;
-                writer.Write(imageData);
-                int imgBufSz = (int)(writer.BaseStream.Position - imageBufferStartOffset);
+                Debug.WriteLine($"stream pos after: 0x{writer.BaseStream.Position:X}");
+                
+                writer.Write(imgData.SelectMany(b => b).ToArray());
+
+                long eof = writer.BaseStream.Position;
+
+                int imgBufferSize = imgData.Select(b => b.Length).Sum();
                 writer.BaseStream.Seek(imageSizeOffset, SeekOrigin.Begin);
-                writer.Write(imgBufSz);
-                writer.BaseStream.Seek(0, SeekOrigin.End);
-                int contentSize = (int)writer.BaseStream.Position - 0x98; // FUI_HEADER_BYTE_SIZE
+                writer.Write((int)imgBufferSize);
+
+                int contentSize = (int)eof - 0x98; // FUI_HEADER_BYTE_SIZE
                 writer.BaseStream.Seek(contentSizeOffset, SeekOrigin.Begin);
                 writer.Write(contentSize);
-                writer.BaseStream.Seek(0, SeekOrigin.End);
+                Debug.WriteLine($"eof: 0x{eof:X}");
+            }
+        }
+
+        private byte[] MakeImage(Image image, FuiBitmap.FuiImageFormat imageFormat, out int zlibOffset)
+        {
+            MemoryStream imgStream = new MemoryStream();
+            zlibOffset = -1;
+            switch (imageFormat)
+            {
+                case (FuiBitmap.FuiImageFormat)4:
+                case FuiBitmap.FuiImageFormat.PNG_WITH_ALPHA_DATA:
+                case FuiBitmap.FuiImageFormat.PNG_NO_ALPHA_DATA:
+                    image.ReverseColorRB().Save(imgStream, ImageFormat.Png);
+                    return imgStream.ToArray();
+                case FuiBitmap.FuiImageFormat.JPEG_NO_ALPHA_DATA:
+                    image.Save(imgStream, ImageFormat.Jpeg);
+                    return imgStream.ToArray();
+                case FuiBitmap.FuiImageFormat.JPEG_WITH_ALPHA_DATA:
+                    image.Save(imgStream, ImageFormat.Jpeg);
+
+                    byte[] alphaData = image.GetAlphaData();
+
+                    var resCompressedStream = new MemoryStream();
+
+                    DeflaterOutputStream compressedStream = new DeflaterOutputStream(resCompressedStream);
+
+                    compressedStream.Write(alphaData, 0, alphaData.Length);
+                    compressedStream.Finish();
+
+                    byte[] compressedAlphaData = resCompressedStream.GetBuffer();
+
+                    imgStream.Write(compressedAlphaData, 0, compressedAlphaData.Length);
+
+                    compressedStream.Dispose();
+
+                    zlibOffset = compressedAlphaData.Length;
+
+                    return imgStream.ToArray();
+                default:
+                    throw new Exception(nameof(imageFormat));
             }
         }
 
@@ -263,11 +292,11 @@ namespace OMI.Workers.FUI
         private static void WriteMatrix(EndiannessAwareBinaryWriter writer, Matrix3x2 matrix)
         {
             writer.Write((float)matrix.M11);
-            writer.Write((float)matrix.M22);
             writer.Write((float)matrix.M12);
             writer.Write((float)matrix.M21);
-            writer.Write((float)matrix.Translation.X);
-            writer.Write((float)matrix.Translation.Y);
+            writer.Write((float)matrix.M22);
+            writer.Write((float)matrix.M31);
+            writer.Write((float)matrix.M32);
         }
 
         private static void WriteRectangleF(EndiannessAwareBinaryWriter writer, RectangleF rect)
