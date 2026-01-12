@@ -276,17 +276,18 @@ namespace OMI.Workers.FUI
 
         private FuiColorTransform ReadColorTransform(EndiannessAwareBinaryReader reader)
         {
-            var colorTransform = new FuiColorTransform();
-            colorTransform.RedAddTerm = reader.ReadSingle();
-            colorTransform.GreenAddTerm = reader.ReadSingle();
-            colorTransform.BlueAddTerm = reader.ReadSingle();
-            colorTransform.AlphaAddTerm = reader.ReadSingle();
+            ColorF addTerm = ReadColorF(reader);
+            ColorF multTerm = ReadColorF(reader);
+            return new FuiColorTransform(multTerm, addTerm);
+        }
 
-            colorTransform.RedMultTerm = reader.ReadSingle();
-            colorTransform.GreenMultTerm = reader.ReadSingle();
-            colorTransform.BlueMultTerm = reader.ReadSingle();
-            colorTransform.AlphaMultTerm = reader.ReadSingle();
-            return colorTransform;
+        private ColorF ReadColorF(EndiannessAwareBinaryReader reader)
+        {
+            float r = reader.ReadSingle();
+            float g = reader.ReadSingle();
+            float b = reader.ReadSingle();
+            float a = reader.ReadSingle();
+            return new ColorF(r, g, b, a);
         }
 
         private FuiTimelineFrame ReadTimelineFrame(EndiannessAwareBinaryReader reader)

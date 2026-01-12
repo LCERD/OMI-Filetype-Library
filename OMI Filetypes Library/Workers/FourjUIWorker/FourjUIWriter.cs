@@ -279,14 +279,15 @@ namespace OMI.Workers.FUI
 
         private static void WriteColorTransform(EndiannessAwareBinaryWriter writer, FuiColorTransform colorTransform)
         {
-            writer.Write((float)colorTransform.RedAddTerm);
-            writer.Write((float)colorTransform.GreenAddTerm);
-            writer.Write((float)colorTransform.BlueAddTerm);
-            writer.Write((float)colorTransform.AlphaAddTerm);
-            writer.Write((float)colorTransform.RedMultTerm);
-            writer.Write((float)colorTransform.GreenMultTerm);
-            writer.Write((float)colorTransform.BlueMultTerm);
-            writer.Write((float)colorTransform.AlphaMultTerm);
+            writer.Write((float)colorTransform.AddTerm.R);
+            writer.Write((float)colorTransform.AddTerm.G);
+            writer.Write((float)colorTransform.AddTerm.B);
+            writer.Write((float)colorTransform.AddTerm.A);
+
+            writer.Write((float)colorTransform.MultTerm.R);
+            writer.Write((float)colorTransform.MultTerm.G);
+            writer.Write((float)colorTransform.MultTerm.B);
+            writer.Write((float)colorTransform.MultTerm.A);
         }
 
         private static void WriteMatrix(EndiannessAwareBinaryWriter writer, Matrix3x2 matrix)
