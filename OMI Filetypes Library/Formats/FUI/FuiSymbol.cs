@@ -20,6 +20,11 @@ namespace OMI.Formats.FUI
             ObjectType = objectType;
             Index = index;
         }
+
+        public override string ToString()
+        {
+            return $"{Name} | ObjectType: {ObjectType} | Index: {Index}";
+        }
     }
 
 }

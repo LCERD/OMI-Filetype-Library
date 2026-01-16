@@ -52,6 +52,11 @@ namespace OMI.Formats.FUI
             Bitmaps = new(bitmapsCount);
         }
 
+        public FuiTimeline GetNamedTimeline(string name)
+        {
+            return TryGetSymbol(name, out FuiSymbol symbol) && symbol.ObjectType == fuiObjectType.TIMELINE ? Timelines[symbol.Index] : default;
+        }
+
         public bool AddSymbol(string name, Image image, FuiBitmap.FuiImageFormat fuiImageFormat = FuiBitmap.FuiImageFormat.PNG_WITH_ALPHA_DATA)
         {
             if (image is null)
@@ -105,6 +110,10 @@ namespace OMI.Formats.FUI
 
         public override string ToString() => Header.ToString();
 
+        public FuiTimeline GetEventTimeline(FuiTimelineEvent fuiTimelineEvent)
+        {
+            return fuiTimelineEvent.ObjectType == fuiObjectType.TIMELINE ? Timelines[fuiTimelineEvent.Index] : default;
+        }
     }
 
     public enum fuiObjectType

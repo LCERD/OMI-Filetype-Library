@@ -5,6 +5,7 @@
 */
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 
 namespace OMI.Formats.FUI
@@ -23,6 +24,11 @@ namespace OMI.Formats.FUI
         public List<FuiTimelineFrame> Frames { get; }
         public List<FuiTimelineAction> Actions { get; }
         public RectangleF Area { get; }
+
+        public FuiTimelineEvent FindNamedEvent(string name)
+        {
+            return Frames.Select(f => f.GetNamedEvent(name)).FirstOrDefault();
+        }
     }
 }
 /* Copyright (c) 2026-present miku-666

@@ -5,6 +5,7 @@
 */
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace OMI.Formats.FUI
 {
@@ -20,6 +21,8 @@ namespace OMI.Formats.FUI
 
         public string FrameName { get; }
         public List<FuiTimelineEvent> Events { get; }
+
+        public FuiTimelineEvent GetNamedEvent(string name) => Events.FirstOrDefault(e => e.Name == name);
     }
 }
 /* Copyright (c) 2026-present miku-666

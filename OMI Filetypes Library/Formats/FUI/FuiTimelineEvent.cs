@@ -43,7 +43,7 @@ namespace OMI.Formats.FUI
         public short Index { get; }
         public short Unknown1 { get; }
         public string Name { get; }
-        public Matrix3x2 Matrix { get; }
+        public Matrix3x2 Matrix { get; set; }
         public FuiColorTransform ColorTransform { get; }
         public System.Drawing.Color Color { get; }
 
