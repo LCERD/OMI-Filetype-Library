@@ -16,11 +16,20 @@
  * 3. This notice may not be removed or altered from any source distribution.
 **/
 using System.Collections.Generic;
+using System.IO;
+using OMI.Workers;
 
 namespace OMI.Formats.Archive
 {
     public class ConsoleArchive : Dictionary<string, byte[]>
     {
         public int SizeOfFile(string filename) => this[filename].Length;
+
+        public void Add(string filename, IDataFormatWriter dataFormatWriter)
+        {
+            MemoryStream stream = new MemoryStream();
+            dataFormatWriter.WriteToStream(stream);
+            Add(filename, stream.ToArray());
+        }
     }
 }
