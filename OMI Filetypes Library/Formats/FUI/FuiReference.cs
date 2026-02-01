@@ -13,6 +13,11 @@ namespace OMI.Formats.FUI
         /// </summary>
         public string Name;
         public int Index;
+
+        public override string ToString()
+        {
+            return $"Reference: {Name}";
+        }
     }
 
 }

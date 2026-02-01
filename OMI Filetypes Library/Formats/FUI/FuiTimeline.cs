@@ -3,6 +3,7 @@
  * https://github.com/NessieHax
  * See License usage at the bottom of file!
 */
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -24,6 +25,11 @@ namespace OMI.Formats.FUI
         public List<FuiTimelineFrame> Frames { get; }
         public List<FuiTimelineAction> Actions { get; }
         public RectangleF Area { get; }
+
+        public FuiTimelineEvent FindEventByReferenceId(int refId)
+        {
+            return Frames.SelectMany(f => f.Events.Where(e => e.ObjectType == fuiObjectType.REFERENCE && e.Index == refId)).FirstOrDefault();
+        }
 
         public FuiTimelineEvent FindNamedEvent(string name)
         {

@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Linq;
 
 namespace OMI.Formats.FUI
@@ -113,6 +112,11 @@ namespace OMI.Formats.FUI
         public FuiTimeline GetEventTimeline(FuiTimelineEvent fuiTimelineEvent)
         {
             return fuiTimelineEvent.ObjectType == fuiObjectType.TIMELINE ? Timelines[fuiTimelineEvent.Index] : default;
+        }
+
+        public int GetReferenceIndex(string referenceName)
+        {
+            return References.FindIndex(r => r.Name == referenceName);
         }
     }
 
