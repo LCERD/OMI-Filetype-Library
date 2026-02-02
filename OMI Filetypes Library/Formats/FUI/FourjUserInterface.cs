@@ -56,20 +56,27 @@ namespace OMI.Formats.FUI
             return TryGetSymbol(name, out FuiSymbol symbol) && symbol.ObjectType == fuiObjectType.TIMELINE ? Timelines[symbol.Index] : default;
         }
 
-        public bool AddSymbol(string name, Image image, FuiBitmap.FuiImageFormat fuiImageFormat = FuiBitmap.FuiImageFormat.PNG_WITH_ALPHA_DATA)
+        public int AddSymbol(string name, Image image, FuiBitmap.FuiImageFormat fuiImageFormat = FuiBitmap.FuiImageFormat.PNG_WITH_ALPHA_DATA)
         {
             if (image is null)
-                return false;
+                return -1;
             if (Symbols.Any(sym => sym.Name == name))
-                return false;
-            Symbols.Add(new FuiSymbol(name, fuiObjectType.BITMAP, Bitmaps.Count));
-            Bitmaps.Add(new FuiBitmap(image, fuiImageFormat, Symbols.Count - 1));
-            return true;
+                return -1;
+            int symBitmapId = AddBitmap(image, fuiImageFormat, Symbols.Count);
+            Symbols.Add(new FuiSymbol(name, fuiObjectType.BITMAP, symBitmapId));
+            return symBitmapId;
         }
 
-        public bool AddSymbol(string name, FuiTimeline timeline)
+        public int AddSymbol(string name, FuiTimeline timeline)
         {
-            return false;
+            if (timeline is null)
+                return -1;
+            if (Symbols.Any(sym => sym.Name == name))
+                return -1;
+            timeline.SymbolIndex = Symbols.Count;
+            int timelineId = AddTimeline(timeline);
+            Symbols.Add(new FuiSymbol(name, fuiObjectType.TIMELINE, timelineId));
+            return timelineId;
         }
 
         public bool SetSymbol(string name, Image image, FuiBitmap.FuiImageFormat fuiImageFormat = FuiBitmap.FuiImageFormat.PNG_WITH_ALPHA_DATA)
@@ -112,6 +119,21 @@ namespace OMI.Formats.FUI
         public FuiTimeline GetEventTimeline(FuiTimelineEvent fuiTimelineEvent)
         {
             return fuiTimelineEvent.ObjectType == fuiObjectType.TIMELINE ? Timelines[fuiTimelineEvent.Index] : default;
+        }
+
+
+        private int AddBitmap(Image image, FuiBitmap.FuiImageFormat format = FuiBitmap.FuiImageFormat.PNG_WITH_ALPHA_DATA, int symbolIndex = -1)
+        {
+            int id = Bitmaps.Count;
+            Bitmaps.Add(new FuiBitmap(image, format, symbolIndex: symbolIndex));
+            return id;
+        }
+
+        private int AddTimeline(FuiTimeline timeline)
+        {
+            int id = Timelines.Count;
+            Timelines.Add(timeline);
+            return id;
         }
 
         public int GetReferenceIndex(string referenceName)
