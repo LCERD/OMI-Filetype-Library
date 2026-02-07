@@ -3,6 +3,7 @@
  * https://github.com/NessieHax
  * See License usage at the bottom of file!
 */
+using System.Diagnostics;
 using System.Drawing.Imaging;
 
 namespace OMI.Formats.FUI
@@ -17,27 +18,28 @@ namespace OMI.Formats.FUI
         public override string ToString() => $"[R: {R}; G: {G}; B: {B}; A: {A}]";
     }
 
+    [DebuggerDisplay("Mult = ({Multiplier}); Offset = ({Offset})")]
     public struct FuiColorTransform
     {
-        public ColorF AddTerm;
+        public ColorF Offset;
 
-        public ColorF MultTerm;
+        public ColorF Multiplier;
 
         public FuiColorTransform() : this(new ColorF(1f, 1f, 1f, 1f), new ColorF(0f, 0f, 0f, 0f))
         {
         }
 
-        public FuiColorTransform(ColorF multTerm, ColorF addTerm)
+        public FuiColorTransform(ColorF multiplier, ColorF offset)
         {
-            MultTerm = multTerm;
-            AddTerm = addTerm;
+            Multiplier = multiplier;
+            Offset = offset;
         }
 
         public bool IsIdentity
         {
             get
             {
-                return (MultTerm.R == 1f && MultTerm.G == 1f && MultTerm.B == 1f && MultTerm.A == 1f);
+                return (Multiplier.R == 1f && Multiplier.G == 1f && Multiplier.B == 1f && Multiplier.A == 1f);
             }
         }
 
@@ -45,26 +47,20 @@ namespace OMI.Formats.FUI
         {
             get
             {
-                return (MultTerm.R == 0f && MultTerm.G == 0f && MultTerm.B == 0f && MultTerm.A == 0f) &&
-                        (AddTerm.R == 0f && AddTerm.G == 0f && AddTerm.B == 0f && AddTerm.A == 0f);
+                return (Multiplier.R == 0f && Multiplier.G == 0f && Multiplier.B == 0f && Multiplier.A == 0f) &&
+                        (Offset.R == 0f && Offset.G == 0f && Offset.B == 0f && Offset.A == 0f);
             }
         }
 
         public static implicit operator ColorMatrix(FuiColorTransform ct)
             => new ColorMatrix(new float[][]
             {
-                [ct.MultTerm.R, 0f, 0f, 0f, 0f],
-                [0f, ct.MultTerm.G, 0f, 0f, 0f],
-                [0f, 0f, ct.MultTerm.B, 0f, 0f],
-                [0f, 0f, 0f, ct.MultTerm.A, 0f],
-                [ct.AddTerm.R, ct.AddTerm.G, ct.AddTerm.B, ct.AddTerm.A, 1f]
+                [ct.Multiplier.R, 0f, 0f, 0f, 0f],
+                [0f, ct.Multiplier.G, 0f, 0f, 0f],
+                [0f, 0f, ct.Multiplier.B, 0f, 0f],
+                [0f, 0f, 0f, ct.Multiplier.A, 0f],
+                [ct.Offset.R, ct.Offset.G, ct.Offset.B, ct.Offset.A, 1f]
             });
-
-        public override string ToString()
-        {
-            return
-                $"(RGBA) Mult = ({MultTerm}); (RGBA) Add = ({AddTerm})";
-        }
     }
 }
 /* Copyright (c) 2026-present miku-666
