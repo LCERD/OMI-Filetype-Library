@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 
 namespace OMI.Formats.FUI
@@ -121,6 +122,29 @@ namespace OMI.Formats.FUI
             return fuiTimelineEvent.ObjectType == fuiObjectType.TIMELINE ? Timelines[fuiTimelineEvent.Index] : default;
         }
 
+        public int AddGif(Image gif)
+        {
+            if (gif.RawFormat.Guid != ImageFormat.Gif.Guid)
+                return -1;
+
+            FuiTimeline timeline = new FuiTimeline();
+            
+            FrameDimension dimension = new FrameDimension(gif.FrameDimensionsList[0]);
+            int frameCount = gif.GetFrameCount(dimension);
+            
+            for (int i = 0; i < frameCount; i++)
+            {
+                gif.SelectActiveFrame(dimension, i);
+                short bitmapIndex = (short)AddBitmap(gif);
+
+                FuiTimelineFrame frame = new FuiTimelineFrame("update_frame");
+                frame.PlaceNewObject(0, fuiObjectType.BITMAP, bitmapIndex, System.Numerics.Matrix3x2.Identity);
+                timeline.Frames.Add(frame);
+                timeline.Frames.Add(new FuiTimelineFrame(""));
+            }
+            
+            return AddTimeline(timeline);
+        }
 
         private int AddBitmap(Image image, FuiBitmap.FuiImageFormat format = FuiBitmap.FuiImageFormat.PNG_WITH_ALPHA_DATA, int symbolIndex = -1)
         {
