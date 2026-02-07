@@ -3,10 +3,12 @@
  * https://github.com/NessieHax
  * See License usage at the bottom of file!
 */
+using System.Diagnostics;
 using System.Drawing;
 
 namespace OMI.Formats.FUI
 {
+    [DebuggerDisplay("Symbol Index: {SymbolIndex}; {Image.Width}x{Image.Height}; Format: {ImageFormat}")]
     public class FuiBitmap
     {
         public enum FuiImageFormat
@@ -28,7 +30,7 @@ namespace OMI.Formats.FUI
         {
             SymbolIndex = symbolIndex;
             ImageFormat = imageFormat;
-            Image = image;
+            Image = new Bitmap(image);
         }
 
         public static implicit operator Image(FuiBitmap fuiBitmap) => fuiBitmap.Image;

@@ -4,11 +4,13 @@
  * See License usage at the bottom of file!s
 */
 using System;
+using System.Diagnostics;
 using System.Numerics;
 
 
 namespace OMI.Formats.FUI
 {
+    [DebuggerDisplay("EventType: {EventType} | ObjectType: {ObjectType} | Depth: {Depth} | Index: {Index} | Unknown1: {Unknown1} | Name: {Name} | Matrix: {Matrix} | ColorTransform: {ColorTransform} | Color: {Color}")]
     public class FuiTimelineEvent
     {
         public FuiTimelineEvent(
@@ -36,21 +38,20 @@ namespace OMI.Formats.FUI
             RemoveObj = 0x02,
             UpdateTransform = 0x04,
             UpdateColor = 0x08,
+            _UNK1 = 0x1000,
+            _UNK2 = 0x2000,
+            _UNK4 = 0x4000,
+            _UNK8 = 0x8000,
         }
         public EventFlags EventType { get; }
-        public fuiObjectType ObjectType { get; }
+        public fuiObjectType ObjectType { get; set; }
         public short Depth { get; }
-        public short Index { get; }
+        public short Index { get; set; }
         public short Unknown1 { get; }
         public string Name { get; }
         public Matrix3x2 Matrix { get; set; }
         public FuiColorTransform ColorTransform { get; }
         public System.Drawing.Color Color { get; }
-
-        public override string ToString()
-        {
-            return $"EventType: {EventType} | ObjectType: {ObjectType} | Depth: {Depth} | Index: {Index} | Unknown1: {Unknown1} | Name: {Name} | Matrix: {Matrix} | ColorTransform: {ColorTransform} | Color: {Color}";
-        }
     }
 
 }

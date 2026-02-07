@@ -3,8 +3,11 @@
  * https://github.com/NessieHax
  * See License usage at the bottom of file!
 */
+using System.Diagnostics;
+
 namespace OMI.Formats.FUI
 {
+    [DebuggerDisplay("[Frame:{FrameIndex}]: {Type} {Arg0} = {Arg1}")]
     public class FuiTimelineAction
     {
         public enum ActionType : ushort
@@ -13,8 +16,9 @@ namespace OMI.Formats.FUI
             Pause = 1,
             SetFrame = 2,
             SetFrameAndStart = 3,
+
             SetTabIndex = 4, //! Set StringArg1 to a valid number (e.g. 1-9)
-            SetLabelPadding = 5, //! ??
+            SetLabelTextAlignment = 5,
             SetLabelProperty0 = 6,
             SetLabelProperty1 = 7,
             SetLabelProperty2 = 8,
@@ -22,6 +26,9 @@ namespace OMI.Formats.FUI
 
             SetValue = 16,
             SetVisible = 17,
+
+
+
             DoListAction = 29, //! Calls 'FJ_List::setAction' or 'FJ_List2D::setAction'
             SelectFrame = 30, //! ?
             AnimationEnd = 31, // Add named animation ?

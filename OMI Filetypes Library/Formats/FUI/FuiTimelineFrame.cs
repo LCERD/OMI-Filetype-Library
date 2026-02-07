@@ -3,26 +3,34 @@
  * https://github.com/NessieHax
  * See License usage at the bottom of file!
 */
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 
 namespace OMI.Formats.FUI
 {
+    [DebuggerDisplay("Frame Name: '{FrameName}' Event count: {Events.Count}")]
     public class FuiTimelineFrame
     {
-        public FuiTimelineFrame(string frameName,  IEnumerable<FuiTimelineEvent> events)
+        public FuiTimelineFrame(string frameName, IEnumerable<FuiTimelineEvent> events = default)
         {
             FrameName = frameName ?? string.Empty;
             if (FrameName.Length > 0x40)
                 Debug.Fail("Frame name to long");
-            Events = new (events);
+            Events = new (events ?? Enumerable.Empty<FuiTimelineEvent>());
         }
 
         public string FrameName { get; }
         public List<FuiTimelineEvent> Events { get; }
 
         public FuiTimelineEvent GetNamedEvent(string name) => Events.FirstOrDefault(e => e.Name == name);
+
+        public void PlaceNewObject(short depth, fuiObjectType objectType, short index, Matrix3x2 matrix, FuiColorTransform colorTransform = default)
+        {
+            Events.Add(new FuiTimelineEvent("", FuiTimelineEvent.EventFlags.PlaceObj | FuiTimelineEvent.EventFlags.UpdateTransform, depth, objectType, index, 0, matrix, colorTransform, System.Drawing.Color.Black));
+        }
     }
 }
 /* Copyright (c) 2026-present miku-666
