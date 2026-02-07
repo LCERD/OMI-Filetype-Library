@@ -13,6 +13,9 @@ namespace OMI.Formats.FUI
 {
     public sealed class FuiTimeline
     {
+        public FuiTimeline() : this(new RectangleF(), Enumerable.Empty<FuiTimelineFrame>(), Enumerable.Empty<FuiTimelineAction>())
+        { }
+
         public FuiTimeline(RectangleF area, IEnumerable<FuiTimelineFrame> frames, IEnumerable<FuiTimelineAction> actions, int symbolIndex = -1)
         {
             SymbolIndex = symbolIndex;
@@ -21,10 +24,12 @@ namespace OMI.Formats.FUI
             Area = area;
         }
 
-        public int SymbolIndex { get; }
+        public int SymbolIndex { get; set; }
         public List<FuiTimelineFrame> Frames { get; }
         public List<FuiTimelineAction> Actions { get; }
         public RectangleF Area { get; }
+
+        public FuiTimelineFrame GetNamedFrame(string name) => Frames.FirstOrDefault(f => f.FrameName == name);
 
         public FuiTimelineEvent FindEventByReferenceId(int refId)
         {
