@@ -3,35 +3,43 @@
  * https://github.com/NessieHax
  * See License usage at the bottom of file!
 */
+using System.Diagnostics;
 using System.Drawing.Imaging;
 
 namespace OMI.Formats.FUI
 {
+    public struct ColorF(float r, float g, float b, float a)
+    {
+        public float R = r;
+        public float G = g;
+        public float B = b;
+        public float A = a;
+
+        public override string ToString() => $"[R: {R}; G: {G}; B: {B}; A: {A}]";
+    }
+
+    [DebuggerDisplay("Mult = ({Multiplier}); Offset = ({Offset})")]
     public struct FuiColorTransform
     {
-        public float RedMultTerm;
-        public float GreenMultTerm;
-        public float BlueMultTerm;
-        public float AlphaMultTerm;
+        public ColorF Offset;
 
-        public float RedAddTerm;
-        public float GreenAddTerm;
-        public float BlueAddTerm;
-        public float AlphaAddTerm;
+        public ColorF Multiplier;
 
-        public FuiColorTransform()
+        public FuiColorTransform() : this(new ColorF(1f, 1f, 1f, 1f), new ColorF(0f, 0f, 0f, 0f))
         {
-            RedMultTerm = 1f;
-            GreenMultTerm = 1f;
-            BlueMultTerm = 1f;
-            AlphaMultTerm = 1f;
+        }
+
+        public FuiColorTransform(ColorF multiplier, ColorF offset)
+        {
+            Multiplier = multiplier;
+            Offset = offset;
         }
 
         public bool IsIdentity
         {
             get
             {
-                return (RedMultTerm == 1f && GreenMultTerm == 1f && BlueMultTerm == 1f && AlphaMultTerm == 1f);
+                return (Multiplier.R == 1f && Multiplier.G == 1f && Multiplier.B == 1f && Multiplier.A == 1f);
             }
         }
 
@@ -39,26 +47,20 @@ namespace OMI.Formats.FUI
         {
             get
             {
-                return (RedMultTerm == 0f && GreenMultTerm == 0f && BlueMultTerm == 0f && AlphaMultTerm == 0f) &&
-                        (RedAddTerm == 0f && GreenAddTerm == 0f && BlueAddTerm == 0f && AlphaAddTerm == 0f);
+                return (Multiplier.R == 0f && Multiplier.G == 0f && Multiplier.B == 0f && Multiplier.A == 0f) &&
+                        (Offset.R == 0f && Offset.G == 0f && Offset.B == 0f && Offset.A == 0f);
             }
         }
 
         public static implicit operator ColorMatrix(FuiColorTransform ct)
             => new ColorMatrix(new float[][]
             {
-                [ct.RedMultTerm, 0f, 0f, 0f, 0f],
-                [0f, ct.GreenMultTerm, 0f, 0f, 0f],
-                [0f, 0f, ct.BlueMultTerm, 0f, 0f],
-                [0f, 0f, 0f, ct.AlphaMultTerm, 0f],
-                [ct.RedAddTerm, ct.GreenAddTerm, ct.BlueAddTerm, ct.AlphaAddTerm, 1f]
+                [ct.Multiplier.R, 0f, 0f, 0f, 0f],
+                [0f, ct.Multiplier.G, 0f, 0f, 0f],
+                [0f, 0f, ct.Multiplier.B, 0f, 0f],
+                [0f, 0f, 0f, ct.Multiplier.A, 0f],
+                [ct.Offset.R, ct.Offset.G, ct.Offset.B, ct.Offset.A, 1f]
             });
-
-        public override string ToString()
-        {
-            return
-                $"(RGBA) Mult = ({RedMultTerm}, {GreenMultTerm}, {BlueMultTerm}, {AlphaMultTerm}); (RGBA) Add = ({RedAddTerm}, {GreenAddTerm}, {BlueAddTerm}, {AlphaAddTerm})";
-        }
     }
 }
 /* Copyright (c) 2026-present miku-666

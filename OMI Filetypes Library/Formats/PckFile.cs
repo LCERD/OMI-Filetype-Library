@@ -12,21 +12,20 @@ namespace OMI.Formats.Pck
     {
         public readonly int Type;
         public const string XML_VERSION_STRING = "XMLVERSION";
-        public bool HasVerionString => _hasVerionString;
         public int AssetCount => Assets.Count;
 
         private PckAssetCollection Assets { get; } = new PckAssetCollection();
-        private bool _hasVerionString = false;
+        public int xmlVersion = 0;
 
         public PckFile(int type)
         {
             Type = type;
         }
 
-        public PckFile(int type, bool hasVersionStr)
+        public PckFile(int type, int _xmlVersion)
             : this(type)
         {
-            _hasVerionString = hasVersionStr;
+            xmlVersion = _xmlVersion;
         }
 
         public PckFile() : this(3) { }

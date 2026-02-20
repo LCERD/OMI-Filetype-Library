@@ -3,8 +3,11 @@
  * https://github.com/NessieHax
  * See License usage at the bottom of file!
 */
+using System.Diagnostics;
+
 namespace OMI.Formats.FUI
 {
+    [DebuggerDisplay("{Name} | ObjectType: {ObjectType} | Index: {Index}")]
     public class FuiSymbol
     {
         /// <summary>

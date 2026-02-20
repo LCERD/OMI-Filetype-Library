@@ -17,6 +17,7 @@
 **/
 using System.Collections.Generic;
 using System.IO;
+using OMI.Workers;
 
 namespace OMI.Formats.Archive
 {
@@ -32,5 +33,12 @@ namespace OMI.Formats.Archive
     public class ConsoleArchive : Dictionary<string, ConsoleArchiveEntry>
     {
         public int SizeOfFile(string filename) => this[filename].Data.Length;
+
+        public void Add(string filename, IDataFormatWriter dataFormatWriter)
+        {
+            MemoryStream stream = new MemoryStream();
+            dataFormatWriter.WriteToStream(stream);
+            Add(filename, new ConsoleArchiveEntry(stream.ToArray()));
+        }
     }
 }

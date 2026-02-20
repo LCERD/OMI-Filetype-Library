@@ -34,17 +34,19 @@ namespace OMI.Workers.Pck
             {
                 writer.Write(_pckFile.Type);
 
-                writer.Write(_propertyList.Count + Convert.ToInt32(_pckFile.HasVerionString));
-                if(_pckFile.HasVerionString)
+                bool hasXMLVersion = _pckFile.xmlVersion > 0;
+
+                writer.Write(_propertyList.Count + Convert.ToInt32(hasXMLVersion));
+                if(hasXMLVersion)
                     _propertyList.Insert(0, PckFile.XML_VERSION_STRING);
                 foreach (var entry in _propertyList)
                 {
                         writer.Write(_propertyList.IndexOf(entry));
                         WriteString(writer, entry);
                 }
-                if (_pckFile.HasVerionString)
+                if (hasXMLVersion)
                 {
-                    writer.Write(1);
+                    writer.Write(_pckFile.xmlVersion);
                 }
 
                 writer.Write(_pckFile.AssetCount);

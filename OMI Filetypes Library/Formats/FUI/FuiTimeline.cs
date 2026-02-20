@@ -3,14 +3,19 @@
  * https://github.com/NessieHax
  * See License usage at the bottom of file!
 */
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 
 namespace OMI.Formats.FUI
 {
     public sealed class FuiTimeline
     {
+        public FuiTimeline() : this(new RectangleF(), Enumerable.Empty<FuiTimelineFrame>(), Enumerable.Empty<FuiTimelineAction>())
+        { }
+
         public FuiTimeline(RectangleF area, IEnumerable<FuiTimelineFrame> frames, IEnumerable<FuiTimelineAction> actions, int symbolIndex = -1)
         {
             SymbolIndex = symbolIndex;
@@ -19,10 +24,22 @@ namespace OMI.Formats.FUI
             Area = area;
         }
 
-        public int SymbolIndex { get; }
+        public int SymbolIndex { get; set; }
         public List<FuiTimelineFrame> Frames { get; }
         public List<FuiTimelineAction> Actions { get; }
         public RectangleF Area { get; }
+
+        public FuiTimelineFrame GetNamedFrame(string name) => Frames.FirstOrDefault(f => f.FrameName == name);
+
+        public FuiTimelineEvent FindEventByReferenceId(int refId)
+        {
+            return Frames.SelectMany(f => f.Events.Where(e => e.ObjectType == fuiObjectType.REFERENCE && e.Index == refId)).FirstOrDefault();
+        }
+
+        public FuiTimelineEvent FindNamedEvent(string name)
+        {
+            return Frames.Select(f => f.GetNamedEvent(name)).FirstOrDefault();
+        }
     }
 }
 /* Copyright (c) 2026-present miku-666
