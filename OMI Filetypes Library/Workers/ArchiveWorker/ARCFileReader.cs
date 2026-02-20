@@ -29,7 +29,7 @@ namespace OMI.Workers.Archive
                     string name = ReadString(reader);
                     int pos = reader.ReadInt32();
                     int size = reader.ReadInt32();
-                    archive[name] = ReadBytesFromPosition(stream, pos, size);
+                    archive.Add(name, new ConsoleArchiveEntry(ReadBytesFromPosition(stream, pos, size)));
                 }
             }
             return archive;

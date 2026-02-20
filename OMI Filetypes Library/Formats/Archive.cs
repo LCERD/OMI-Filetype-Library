@@ -16,11 +16,21 @@
  * 3. This notice may not be removed or altered from any source distribution.
 **/
 using System.Collections.Generic;
+using System.IO;
 
 namespace OMI.Formats.Archive
 {
-    public class ConsoleArchive : Dictionary<string, byte[]>
+    public class ConsoleArchiveEntry(byte[] data)
     {
-        public int SizeOfFile(string filename) => this[filename].Length;
+        private byte[] _data = data ?? throw new System.ArgumentNullException(nameof(data));
+
+        public byte[] Data => _data;
+
+        public Stream Open() => new MemoryStream(_data);
+    }
+
+    public class ConsoleArchive : Dictionary<string, ConsoleArchiveEntry>
+    {
+        public int SizeOfFile(string filename) => this[filename].Data.Length;
     }
 }

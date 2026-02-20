@@ -169,33 +169,33 @@ namespace OMI.Workers.FUI
             var offset = reader.ReadInt32();
             var size = reader.ReadInt32();
             var zlibDataOffset = reader.ReadInt32();
-            
+
             // "BindHandle" can be ignored anything set will crash the game or lead to undefined behaviour. -null
             _ = reader.ReadInt32();
 
-            long origin = reader.BaseStream.Position;
-            reader.BaseStream.Seek(_imageDataStartOffset + offset, SeekOrigin.Begin);
-
-            byte[] buffer = reader.ReadBytes(size);
-
-            Stream imgBufferStream = new MemoryStream(buffer);
-
-            Image img = Image.FromStream(imgBufferStream);
-
-            if (imageFormat <= FuiBitmap.FuiImageFormat.PNG_NO_ALPHA_DATA)
-                img = img.ReverseColorRB();
-            if (imageFormat == FuiBitmap.FuiImageFormat.JPEG_WITH_ALPHA_DATA && zlibDataOffset > -1)
+            Image img = reader.ReadAt(_imageDataStartOffset + offset, r =>
             {
-                int bufferSize = size - zlibDataOffset;
+                byte[] buffer = r.ReadBytes(size);
 
-                reader.BaseStream.Seek(_imageDataStartOffset + offset + zlibDataOffset, SeekOrigin.Begin);
+                Stream imgBufferStream = new MemoryStream(buffer);
 
-                Stream decompressedStream = new InflaterInputStream(reader.BaseStream, new Inflater(), bufferSize);
-                var outputStream = new MemoryStream();
-                decompressedStream.CopyTo(outputStream);
-                img = img.SetAlphaData(outputStream.ToArray());
-            }
-            reader.BaseStream.Seek(origin, SeekOrigin.Begin);
+                Image img = Image.FromStream(imgBufferStream);
+
+                if (imageFormat <= FuiBitmap.FuiImageFormat.PNG_NO_ALPHA_DATA)
+                    img = img.ReverseColorRB();
+                if (imageFormat == FuiBitmap.FuiImageFormat.JPEG_WITH_ALPHA_DATA && zlibDataOffset > -1)
+                {
+                    int bufferSize = size - zlibDataOffset;
+
+                    r.BaseStream.Seek(_imageDataStartOffset + offset + zlibDataOffset, SeekOrigin.Begin);
+
+                    Stream decompressedStream = new InflaterInputStream(r.BaseStream, new Inflater(), bufferSize);
+                    var outputStream = new MemoryStream();
+                    decompressedStream.CopyTo(outputStream);
+                    img = img.SetAlphaData(outputStream.ToArray());
+                }
+                return img;
+            });
 
             FuiBitmap fuiBitmap = new FuiBitmap(img, imageFormat, symbolIndex);
             return fuiBitmap;
@@ -261,17 +261,8 @@ namespace OMI.Workers.FUI
             FuiColorTransform colorTransform = ReadColorTransform(reader);
             System.Drawing.Color color = ReadColor(reader);
 
-            string name = string.Empty;
-            if (nameIndex > -1)
-            {
-                long origin = reader.BaseStream.Position;
-                reader.BaseStream.Position = _timelineEventNamesStartOffset + nameIndex * FUI_TIMELINE_EVENT_NAME_BYTE_SIZE;
-                name = reader.ReadString(0x40);
-                reader.BaseStream.Position = origin;    
-            }
-            FuiTimelineEvent timelineEvent = new FuiTimelineEvent(name, eventType, depth, objectType, index, unknown1, matrix, colorTransform, color);
-
-            return timelineEvent;
+            string name = nameIndex > -1 ? reader.ReadAt(_timelineEventNamesStartOffset + nameIndex * FUI_TIMELINE_EVENT_NAME_BYTE_SIZE, r => r.ReadString(0x40)) : string.Empty;
+            return new FuiTimelineEvent(name, eventType, depth, objectType, index, unknown1, matrix, colorTransform, color);
         }
 
         private FuiColorTransform ReadColorTransform(EndiannessAwareBinaryReader reader)
@@ -295,7 +286,7 @@ namespace OMI.Workers.FUI
             int eventIndex = reader.ReadInt32();
             int eventCount = reader.ReadInt32();
             FuiTimelineFrame timelineFrame = new FuiTimelineFrame(frameName, Enumerable.Empty<FuiTimelineEvent>());
-            
+
             long offset = _timelineEventsStartOffset + eventIndex * FUI_TIMELINE_EVENT_BYTE_SIZE;
 
             reader.FillAtOffset(timelineFrame.Events, eventCount, offset, ReadTimelineEvent);
@@ -371,10 +362,10 @@ namespace OMI.Workers.FUI
             short actionCount = reader.ReadInt16();
             RectangleF area = ReadRect(reader);
             FuiTimeline timeline = new FuiTimeline(area, Enumerable.Empty<FuiTimelineFrame>(), Enumerable.Empty<FuiTimelineAction>(), symbolIndex);
-            
+
             long framesOffset = _timelineFramesStartOffset + frameIndex * FUI_TIMELINE_FRAME_BYTE_SIZE;
             reader.FillAtOffset(timeline.Frames, frameCount, framesOffset, ReadTimelineFrame);
-            
+
             long actionOffset = _timelineActionsStartOffset + actionIndex * FUI_TIMELINE_ACTION_BYTE_SIZE;
             reader.FillAtOffset(timeline.Actions, actionCount, actionOffset, ReadTimelineAction);
             return timeline;

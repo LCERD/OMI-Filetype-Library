@@ -13,6 +13,7 @@ namespace OMI.Formats.FUI
         {
             PNG_WITH_ALPHA_DATA = 1,
             PNG_NO_ALPHA_DATA = 3,
+            PNG = 4,
             JPEG_NO_ALPHA_DATA = 6,
             /// <summary>
             /// <see cref="ZlibDataOffset"/> has to be set!

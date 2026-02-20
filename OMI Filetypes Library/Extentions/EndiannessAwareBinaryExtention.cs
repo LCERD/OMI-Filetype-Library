@@ -36,5 +36,15 @@ namespace OMI.Extentions
             reader.Fill(list, count, readItemFunc);
             reader.BaseStream.Position = origin;
         }
+
+        internal static T ReadAt<T>(this EndiannessAwareBinaryReader reader, long offset, Func<EndiannessAwareBinaryReader, T> readItemFunc)
+        {
+            long origin = reader.BaseStream.Position;
+            reader.BaseStream.Position = offset;
+            T res = readItemFunc(reader);
+            reader.BaseStream.Position = origin;
+            return res;
+        }
+
     }
 }

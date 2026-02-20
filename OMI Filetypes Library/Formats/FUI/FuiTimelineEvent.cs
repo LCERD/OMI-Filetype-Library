@@ -35,7 +35,7 @@ namespace OMI.Formats.FUI
             PlaceObj = 0x01,
             RemoveObj = 0x02,
             UpdateTransform = 0x04,
-            UpdateColor = 0x08,
+            UpdateColor = 0x08
         }
         public EventFlags EventType { get; }
         public fuiObjectType ObjectType { get; }
