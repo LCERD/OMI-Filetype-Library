@@ -38,7 +38,7 @@ namespace OMI.Workers.Pck
 
                 writer.Write(_propertyList.Count + Convert.ToInt32(hasXMLVersion));
                 if(hasXMLVersion)
-                    _propertyList.Insert(0, PckFile.XML_VERSION_STRING);
+                    _propertyList.Add(PckFile.XML_VERSION_STRING);
                 foreach (var entry in _propertyList)
                 {
                         writer.Write(_propertyList.IndexOf(entry));
