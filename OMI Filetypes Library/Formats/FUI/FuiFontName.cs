@@ -1,4 +1,21 @@
-﻿/* Copyright (c) 2023-present miku-666
+﻿/*
+ * all known FourJUserInterface information is the direct product of Miku-666(NessieHax)'s work! check em out! 
+ * https://github.com/NessieHax
+ * See License usage at the bottom of file!
+*/
+
+namespace OMI.Formats.FUI
+{
+    public class FuiFontName
+    {
+        public int ID;
+        /// <summary>
+        /// Max size: 0x100
+        /// </summary>
+        public string Name;
+    }
+}
+/* Copyright (c) 2026-present miku-666
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
  * arising from the use of this software.
@@ -15,11 +32,3 @@
  *    misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
 **/
-namespace OMI
-{
-    public enum Endianness
-    {
-        LittleEndian,
-        BigEndian,
-    }
-}

@@ -1,4 +1,393 @@
-﻿/* Copyright (c) 2022-present miku-666
+﻿/*
+ * all known FourJUserInterface information is the direct product of Miku-666(NessieHax)'s work! check em out! 
+ * https://github.com/NessieHax
+ * See License usage at the bottom of file!
+*/
+
+using System;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Text;
+using ICSharpCode.SharpZipLib.Zip.Compression;
+using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
+using OMI.Extentions;
+using OMI.Formats.FUI;
+/*
+* all known FourJUserInterface information is the direct product of Miku-666(NessieHax)'s work! check em out! 
+* https://github.com/NessieHax
+*/
+namespace OMI.Workers.FUI
+{
+    public class FourjUIReader : IDataFormatReader<FourjUserInterface>, IDataFormatReader
+    {
+        const int FUI_HEADER_BYTE_SIZE = 0x98;
+
+        const int FUI_TIMELINE_BYTE_SIZE = 0x1c;
+        const int FUI_TIMELINE_ACTION_BYTE_SIZE = 0x84;
+
+        const int FUI_SHAPE_BYTE_SIZE = 0x1c;
+        const int FUI_SHAPE_COMPONENT_BYTE_SIZE = 0x2c;
+        const int FUI_VERT_BYTE_SIZE = 0x8;
+
+        const int FUI_TIMELINE_FRAME_BYTE_SIZE = 0x48;
+        const int FUI_TIMELINE_EVENT_BYTE_SIZE = 0x48;
+        const int FUI_TIMELINE_EVENT_NAME_BYTE_SIZE = 0x40;
+
+        //const int FUI_BITMAP_BYTE_SIZE = 0x20;
+        private long _timelinesStartOffset;
+        private long _timelineActionsStartOffset;
+        private long _shapesStartOffset;
+        private long _shapeComponentsStartOffset;
+        private long _vertsStartOffset;
+        private long _timelineFramesStartOffset;
+        private long _timelineEventsStartOffset;
+        private long _timelineEventNamesStartOffset;
+        private long _imageDataStartOffset;
+
+        public FourjUIReader()
+        {
+        }
+
+        public FourjUserInterface FromFile(string filename)
+        {
+            if (!File.Exists(filename))
+                throw new FileNotFoundException(filename);
+            FourjUserInterface userInterfaceContainer;
+            using (FileStream fs = File.OpenRead(filename))
+            {
+                userInterfaceContainer = FromStream(fs);
+            }
+            return userInterfaceContainer;
+        }
+
+        public FourjUserInterface FromStream(Stream stream)
+        {
+            using var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, ByteOrder.LittleEndian);
+
+            string signature = reader.ReadString(8);
+            Debug.Assert(signature == FuiHeader.DefaultSignature, "Invalid signature");
+
+            var contentSize = reader.ReadInt32();
+            var swfFileName = reader.ReadString(0x40);
+
+            int timelinesCount = reader.ReadInt32();
+            int timelineEventNamesCount = reader.ReadInt32();
+            int timelineActionsCount = reader.ReadInt32();
+            int shapesCount = reader.ReadInt32();
+            int shapeComponentsCount = reader.ReadInt32();
+            int vertsCount = reader.ReadInt32();
+            int timelineFramesCount = reader.ReadInt32();
+            int timelineEventsCount = reader.ReadInt32();
+            int referencesCount = reader.ReadInt32();
+            int edittextsCount = reader.ReadInt32();
+            int symbolsCount = reader.ReadInt32();
+            int bitmapsCount = reader.ReadInt32();
+
+            int imagesSize = reader.ReadInt32();
+
+            int fontNamesCount = reader.ReadInt32();
+            int importAssetsCount = reader.ReadInt32();
+
+            RectangleF rect = ReadRect(reader);
+            FourjUserInterface uiContainer = new FourjUserInterface(swfFileName, rect,
+                importAssetsCount,
+                timelinesCount,
+                shapesCount,
+                referencesCount,
+                edittextsCount,
+                fontNamesCount,
+                symbolsCount,
+                bitmapsCount
+                );
+
+            _timelinesStartOffset = FUI_HEADER_BYTE_SIZE;
+            long timelinesSize = FUI_TIMELINE_BYTE_SIZE * timelinesCount;
+
+            _timelineActionsStartOffset = _timelinesStartOffset + timelinesSize;
+            long timelineActionsSize = FUI_TIMELINE_ACTION_BYTE_SIZE * timelineActionsCount;
+
+            _shapesStartOffset = _timelineActionsStartOffset + timelineActionsSize;
+            long shapesSize = FUI_SHAPE_BYTE_SIZE * shapesCount;
+
+            _shapeComponentsStartOffset = _shapesStartOffset + shapesSize;
+            long shapeComponentsSize = FUI_SHAPE_COMPONENT_BYTE_SIZE * shapeComponentsCount;
+
+            _vertsStartOffset = _shapeComponentsStartOffset + shapeComponentsSize;
+            long vertsSize = FUI_VERT_BYTE_SIZE * vertsCount;
+
+            _timelineFramesStartOffset = _vertsStartOffset + vertsSize;
+            long timelineFramesSize = FUI_TIMELINE_FRAME_BYTE_SIZE * timelineFramesCount;
+
+            _timelineEventsStartOffset = _timelineFramesStartOffset + timelineFramesSize;
+            long timelineEventsSize = FUI_TIMELINE_EVENT_BYTE_SIZE * timelineEventsCount;
+
+            _timelineEventNamesStartOffset = _timelineEventsStartOffset + timelineEventsSize;
+            long timelineEventNamesSize = FUI_TIMELINE_EVENT_NAME_BYTE_SIZE * timelineEventNamesCount;
+
+            long origin = reader.BaseStream.Position;
+            _imageDataStartOffset = reader.BaseStream.Seek(-imagesSize, SeekOrigin.End);
+            reader.BaseStream.Seek(origin, SeekOrigin.Begin);
+
+            Debug.Assert(reader.BaseStream.Position == FUI_HEADER_BYTE_SIZE, "Invalid Header size");
+
+            reader.Fill(uiContainer.Timelines, timelinesCount, ReadTimeline);
+
+            reader.BaseStream.Position = _shapesStartOffset;
+            reader.Fill(uiContainer.Shapes, shapesCount, ReadShape);
+
+            reader.BaseStream.Position = _timelineEventNamesStartOffset + timelineEventNamesSize;
+            reader.Fill(uiContainer.References, referencesCount, ReadReference);
+            reader.Fill(uiContainer.Edittexts, edittextsCount, ReadEdittext);
+            reader.Fill(uiContainer.FontNames, fontNamesCount, ReadFontName);
+            reader.Fill(uiContainer.Symbols, symbolsCount, ReadSymbol);
+            reader.Fill(uiContainer.ImportAssets, importAssetsCount, r => r.ReadString(0x40));
+            reader.Fill(uiContainer.Bitmaps, bitmapsCount, ReadBitmap);
+
+
+            Debug.Assert(reader.BaseStream.Seek(0, SeekOrigin.End) == contentSize + FUI_HEADER_BYTE_SIZE, "Contentsize missmatch");
+            return uiContainer;
+        }
+
+        private static RectangleF ReadRect(EndiannessAwareBinaryReader reader)
+        {
+            float minX = reader.ReadSingle();
+            float maxX = reader.ReadSingle();
+            float minY = reader.ReadSingle();
+            float maxY = reader.ReadSingle();
+            return new RectangleF(minX, minY, maxX - minX, maxY - minY);
+        }
+
+        private FuiBitmap ReadBitmap(EndiannessAwareBinaryReader reader)
+        {
+            var symbolIndex = reader.ReadInt32();
+            var imageFormat = (FuiBitmap.FuiImageFormat)reader.ReadInt32();
+            var width = reader.ReadInt32();
+            var height = reader.ReadInt32();
+            var offset = reader.ReadInt32();
+            var size = reader.ReadInt32();
+            var zlibDataOffset = reader.ReadInt32();
+
+            // "BindHandle" can be ignored anything set will crash the game or lead to undefined behaviour. -null
+            _ = reader.ReadInt32();
+
+            Image img = reader.ReadAt(_imageDataStartOffset + offset, r =>
+            {
+                byte[] buffer = r.ReadBytes(size);
+
+                Stream imgBufferStream = new MemoryStream(buffer);
+
+                Image img = Image.FromStream(imgBufferStream);
+
+                if (imageFormat <= FuiBitmap.FuiImageFormat.PNG_NO_ALPHA_DATA)
+                    img = img.ReverseColorRB();
+                if (imageFormat == FuiBitmap.FuiImageFormat.JPEG_WITH_ALPHA_DATA && zlibDataOffset > -1)
+                {
+                    int bufferSize = size - zlibDataOffset;
+
+                    r.BaseStream.Seek(_imageDataStartOffset + offset + zlibDataOffset, SeekOrigin.Begin);
+
+                    Stream decompressedStream = new InflaterInputStream(r.BaseStream, new Inflater(), bufferSize);
+                    var outputStream = new MemoryStream();
+                    decompressedStream.CopyTo(outputStream);
+                    img = img.SetAlphaData(outputStream.ToArray());
+                }
+                return img;
+            });
+
+            FuiBitmap fuiBitmap = new FuiBitmap(img, imageFormat, symbolIndex);
+            return fuiBitmap;
+        }
+
+        private FuiSymbol ReadSymbol(EndiannessAwareBinaryReader reader)
+        {
+            string name = reader.ReadString(0x40);
+            fuiObjectType objectType = (fuiObjectType)reader.ReadInt32();
+            int index = reader.ReadInt32();
+            return new FuiSymbol(name, objectType, index);
+        }
+
+        private FuiFontName ReadFontName(EndiannessAwareBinaryReader reader)
+        {
+            FuiFontName fontName = new FuiFontName();
+            fontName.ID = reader.ReadInt32();
+            fontName.Name = reader.ReadString(0x100);
+            return fontName;
+        }
+
+        private FuiEdittext ReadEdittext(EndiannessAwareBinaryReader reader)
+        {
+            FuiEdittext edittext = new FuiEdittext();
+            edittext.Unknown0 = reader.ReadInt32();
+            edittext.Rectangle = ReadRect(reader);
+            edittext.FontId = reader.ReadInt32();
+            edittext.FontScale = reader.ReadSingle();
+            edittext.Color = ReadColor(reader);
+            edittext.Alignment = (StringAlignment)reader.ReadByte();
+            edittext._a = reader.ReadByte();
+            edittext._b = reader.ReadByte();
+            edittext._c = reader.ReadByte();
+            edittext.Unknown3 = reader.ReadInt32();
+            edittext.Unknown4 = reader.ReadInt32();
+            edittext.Unknown5 = reader.ReadInt32();
+            edittext.Unknown6 = reader.ReadSingle();
+            edittext.Unknown7 = reader.ReadInt32();
+            edittext.htmlSource = reader.ReadString(0x100);
+            return edittext;
+        }
+
+
+        private FuiReference ReadReference(EndiannessAwareBinaryReader reader)
+        {
+            FuiReference reference = new FuiReference();
+            reference.SymbolIndex = reader.ReadInt32();
+            reference.Name = reader.ReadString(0x40);
+            reference.Index = reader.ReadInt32();
+            return reference;
+        }
+
+        private FuiTimelineEvent ReadTimelineEvent(EndiannessAwareBinaryReader reader)
+        {
+            FuiTimelineEvent.EventFlags eventType = (FuiTimelineEvent.EventFlags)reader.ReadInt16();
+            var objectType = (fuiObjectType)reader.ReadByte();
+            _ = reader.ReadByte();
+            var depth = reader.ReadInt16();
+            var index = reader.ReadInt16();
+            var unknown1 = reader.ReadInt16();
+            var nameIndex = reader.ReadInt16();
+            Matrix3x2 matrix = ReadMatrix(reader);
+            FuiColorTransform colorTransform = ReadColorTransform(reader);
+            System.Drawing.Color color = ReadColor(reader);
+
+            string name = nameIndex > -1 ? reader.ReadAt(_timelineEventNamesStartOffset + nameIndex * FUI_TIMELINE_EVENT_NAME_BYTE_SIZE, r => r.ReadString(0x40)) : string.Empty;
+            return new FuiTimelineEvent(name, eventType, depth, objectType, index, unknown1, matrix, colorTransform, color);
+        }
+
+        private FuiColorTransform ReadColorTransform(EndiannessAwareBinaryReader reader)
+        {
+            ColorF addTerm = ReadColorF(reader);
+            ColorF multTerm = ReadColorF(reader);
+            return new FuiColorTransform(multTerm, addTerm);
+        }
+
+        private ColorF ReadColorF(EndiannessAwareBinaryReader reader)
+        {
+            float r = reader.ReadSingle();
+            float g = reader.ReadSingle();
+            float b = reader.ReadSingle();
+            float a = reader.ReadSingle();
+            return new ColorF(r, g, b, a);
+        }
+
+        private FuiTimelineFrame ReadTimelineFrame(EndiannessAwareBinaryReader reader)
+        {
+            string frameName = reader.ReadString(0x40);
+            int eventIndex = reader.ReadInt32();
+            int eventCount = reader.ReadInt32();
+            FuiTimelineFrame timelineFrame = new FuiTimelineFrame(frameName, Enumerable.Empty<FuiTimelineEvent>());
+
+            long offset = _timelineEventsStartOffset + eventIndex * FUI_TIMELINE_EVENT_BYTE_SIZE;
+
+            reader.FillAtOffset(timelineFrame.Events, eventCount, offset, ReadTimelineEvent);
+            return timelineFrame;
+        }
+
+        private PointF ReadVert(EndiannessAwareBinaryReader reader)
+        {
+            float x = reader.ReadSingle();
+            float y = reader.ReadSingle();
+            return new PointF(x, y);
+        }
+
+        private static Matrix3x2 ReadMatrix(EndiannessAwareBinaryReader reader)
+        {
+            Matrix3x2 result = Matrix3x2.Identity;
+            result.M11 = reader.ReadSingle();
+            result.M12 = reader.ReadSingle();
+            result.M21 = reader.ReadSingle();
+            result.M22 = reader.ReadSingle();
+            result.M31 = reader.ReadSingle();
+            result.M32 = reader.ReadSingle();
+            return result;
+        }
+
+        private System.Drawing.Color ReadColor(EndiannessAwareBinaryReader reader)
+        {
+            uint rgba = reader.ReadUInt32();
+            return System.Drawing.Color.FromArgb((int)(((rgba & 0xff) << 24) | ((rgba & 0xffffff00) >> 8)));
+        }
+
+        private FuiFillStyle ReadFillStyle(EndiannessAwareBinaryReader reader)
+        {
+            FuiFillStyle fillInfo = new FuiFillStyle();
+            fillInfo.Type = (FuiFillStyle.FillType)reader.ReadInt32();
+            fillInfo.Color = ReadColor(reader);
+            fillInfo.BitmapIndex = reader.ReadInt32();
+            fillInfo.Matrix = ReadMatrix(reader);
+            return fillInfo;
+        }
+
+        private FuiShapeComponent ReadShapeComponent(EndiannessAwareBinaryReader reader)
+        {
+            FuiFillStyle fillInfo = ReadFillStyle(reader);
+            int vertIndex = reader.ReadInt32();
+            int vertCount = reader.ReadInt32();
+            FuiShapeComponent shapeComponent = new FuiShapeComponent(fillInfo, new PointF[vertCount]);
+
+            long offset = _vertsStartOffset + vertIndex * FUI_VERT_BYTE_SIZE;
+            reader.FillAtOffset(shapeComponent.Verts, vertCount, offset, ReadVert);
+            return shapeComponent;
+        }
+
+        private FuiShape ReadShape(EndiannessAwareBinaryReader reader)
+        {
+            _ = reader.ReadInt32();
+            int shapeComponentIndex = reader.ReadInt32();
+            int shapeComponentCount = reader.ReadInt32();
+            RectangleF area = ReadRect(reader);
+            FuiShape shape = new FuiShape(area, Enumerable.Empty<FuiShapeComponent>());
+
+            long offset = _shapeComponentsStartOffset + shapeComponentIndex * FUI_SHAPE_COMPONENT_BYTE_SIZE;
+            reader.FillAtOffset(shape.Components, shapeComponentCount, offset, ReadShapeComponent);
+            return shape;
+        }
+
+        private FuiTimeline ReadTimeline(EndiannessAwareBinaryReader reader)
+        {
+            int symbolIndex = reader.ReadInt32();
+            short frameIndex = reader.ReadInt16();
+            short frameCount = reader.ReadInt16();
+            short actionIndex = reader.ReadInt16();
+            short actionCount = reader.ReadInt16();
+            RectangleF area = ReadRect(reader);
+            FuiTimeline timeline = new FuiTimeline(area, Enumerable.Empty<FuiTimelineFrame>(), Enumerable.Empty<FuiTimelineAction>(), symbolIndex);
+
+            long framesOffset = _timelineFramesStartOffset + frameIndex * FUI_TIMELINE_FRAME_BYTE_SIZE;
+            reader.FillAtOffset(timeline.Frames, frameCount, framesOffset, ReadTimelineFrame);
+
+            long actionOffset = _timelineActionsStartOffset + actionIndex * FUI_TIMELINE_ACTION_BYTE_SIZE;
+            reader.FillAtOffset(timeline.Actions, actionCount, actionOffset, ReadTimelineAction);
+            return timeline;
+        }
+
+        private FuiTimelineAction ReadTimelineAction(EndiannessAwareBinaryReader reader)
+        {
+            FuiTimelineAction timelineAction = new FuiTimelineAction();
+            timelineAction.Type = (FuiTimelineAction.ActionType)reader.ReadInt16();
+            timelineAction.FrameIndex = reader.ReadInt16();
+            timelineAction.Arg0 = reader.ReadString(0x40);
+            timelineAction.Arg1 = reader.ReadString(0x40);
+            return timelineAction;
+        }
+
+        object IDataFormatReader.FromStream(Stream stream) => FromStream(stream);
+
+        object IDataFormatReader.FromFile(string filename) => FromFile(filename);
+    }
+}
+/* Copyright (c) 2022-present miku-666
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
  * arising from the use of this software.
@@ -15,285 +404,3 @@
  *    misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
 **/
-using System;
-using System.IO;
-using System.Text;
-using System.Drawing;
-using System.Diagnostics;
-using System.Collections.Generic;
-using OMI.Extentions;
-using OMI.Formats.FUI;
-using OMI.Formats.FUI.Components;
-/*
-* all known FourJUserInterface information is the direct product of Miku-666(NessieHax)'s work! check em out! 
-* https://github.com/NessieHax
-*/
-namespace OMI.Workers.FUI
-{
-    public class FourjUIReader : IDataFormatReader<FourjUserInterface>, IDataFormatReader
-    {
-        public FourjUIReader()
-        {
-        }
-
-        public FourjUserInterface FromFile(string filename)
-        {
-            if (!File.Exists(filename))
-                throw new FileNotFoundException(filename);
-            FourjUserInterface UserInterfaceContainer;
-            using (var fs = File.OpenRead(filename))
-            {
-                UserInterfaceContainer = FromStream(fs);
-            }
-            return UserInterfaceContainer;
-        }
-
-        public FourjUserInterface FromStream(Stream stream)
-        {
-            FourjUserInterface UIContainer = new FourjUserInterface();
-            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, Endianness.LittleEndian))
-            {
-                UIContainer.Header.Signature = reader.ReadInt64(Endianness.LittleEndian);
-                UIContainer.Header.ContentSize = reader.ReadInt32();
-                UIContainer.Header.SwfFileName = reader.ReadString(0x40);
-
-                UIContainer.Timelines = new List<FuiTimeline>(reader.ReadInt32());
-                UIContainer.TimelineEventNames = new List<string>(reader.ReadInt32());
-                UIContainer.TimelineActions = new List<FuiTimelineAction>(reader.ReadInt32());
-                UIContainer.Shapes = new List<FuiShape>(reader.ReadInt32());
-                UIContainer.ShapeComponents = new List<FuiShapeComponent>(reader.ReadInt32());
-                UIContainer.Verts = new List<PointF>(reader.ReadInt32());
-                UIContainer.TimelineFrames = new List<FuiTimelineFrame>(reader.ReadInt32());
-                UIContainer.TimelineEvents = new List<FuiTimelineEvent>(reader.ReadInt32());
-                UIContainer.References = new List<FuiReference>(reader.ReadInt32());
-                UIContainer.Edittexts = new List<FuiEdittext>(reader.ReadInt32());
-                UIContainer.Symbols = new List<FuiSymbol>(reader.ReadInt32());
-                UIContainer.Bitmaps = new List<FuiBitmap>(reader.ReadInt32());
-
-                int imagesSize = reader.ReadInt32();
-
-                UIContainer.FontNames = new List<FuiFontName>(reader.ReadInt32());
-                UIContainer.ImportAssets = new List<string>(reader.ReadInt32());
-
-                UIContainer.Header.FrameSize.Min.X = reader.ReadSingle();
-                UIContainer.Header.FrameSize.Max.X = reader.ReadSingle();
-                UIContainer.Header.FrameSize.Min.Y = reader.ReadSingle();
-                UIContainer.Header.FrameSize.Max.Y = reader.ReadSingle();
-
-                reader.Fill(UIContainer.Timelines, ReadTimeline);
-                reader.Fill(UIContainer.TimelineActions, ReadTimelineAction);
-                reader.Fill(UIContainer.Shapes, ReadShape);
-                reader.Fill(UIContainer.ShapeComponents, ReadShapeComponent);
-                reader.Fill(UIContainer.Verts, ReadVert);
-                reader.Fill(UIContainer.TimelineFrames, ReadTimelineFrame);
-                reader.Fill(UIContainer.TimelineEvents, ReadTimelineEvent);
-                reader.Fill(UIContainer.TimelineEventNames, ReadString);
-                reader.Fill(UIContainer.References, ReadReference);
-                reader.Fill(UIContainer.Edittexts, ReadEdittext);
-                reader.Fill(UIContainer.FontNames, ReadFontName);
-                reader.Fill(UIContainer.Symbols, ReadSymbol);
-                reader.Fill(UIContainer.ImportAssets, ReadString);
-                reader.Fill(UIContainer.Bitmaps, ReadBitmap);
-
-                using (var ms = new MemoryStream(reader.ReadBytes(imagesSize)))
-                {
-                    foreach (FuiBitmap bitmap in UIContainer.Bitmaps)
-                    {
-                        long origin = ms.Position;
-                        ms.Seek(bitmap.Offset, SeekOrigin.Begin);
-                        byte[] buffer = new byte[bitmap.Size];
-                        ms.Read(buffer, 0, bitmap.Size);
-                        ms.Seek(origin, SeekOrigin.Begin);
-
-                        Bitmap bmp;
-                        using (var ms2 = new MemoryStream(buffer))
-                        {
-                            bmp = new Bitmap(ms2);
-                            if (bitmap.ImageFormat == FuiBitmap.FuiImageFormat.PNG_WITH_ALPHA_DATA || bitmap.ImageFormat == FuiBitmap.FuiImageFormat.JPEG_NO_ALPHA_DATA)
-                            {
-                                bitmap.ReverseRGB(bmp);
-                                buffer = ((byte[])new ImageConverter().ConvertTo(bitmap.image, typeof(byte[])));
-                            }
-                            bitmap.image = bmp;
-                        }
-                        
-                    }
-                }
-            }
-            return UIContainer;
-        }
-
-        private FuiBitmap ReadBitmap(EndiannessAwareBinaryReader reader)
-        {
-            FuiBitmap tline = new FuiBitmap();
-            tline.SymbolIndex = reader.ReadInt32();
-            tline.ImageFormat = (FuiBitmap.FuiImageFormat)reader.ReadInt32();
-            tline.ImageSize.Width = reader.ReadInt32();
-            tline.ImageSize.Height = reader.ReadInt32();
-            tline.Offset = reader.ReadInt32();
-            tline.Size = reader.ReadInt32();
-            tline.ZlibDataOffset = reader.ReadInt32();
-            //tline.BindHandle = reader.ReadInt32();
-            reader.ReadInt32();
-            return tline;
-        }
-
-        private FuiSymbol ReadSymbol(EndiannessAwareBinaryReader reader)
-        {
-            FuiSymbol symbol = new FuiSymbol();
-            symbol.Name = reader.ReadString(0x40);
-            symbol.ObjectType = reader.ReadInt32();
-            symbol.Index = reader.ReadInt32();
-            return symbol;
-        }
-
-        private FuiFontName ReadFontName(EndiannessAwareBinaryReader reader)
-        {
-            FuiFontName fontName = new FuiFontName();
-            fontName.ID = reader.ReadInt32();
-            fontName.Name = reader.ReadString(0x40);
-            fontName.UnknownData = reader.ReadBytes(0xc0); // unknown values
-            return fontName;
-        }
-
-        private FuiEdittext ReadEdittext(EndiannessAwareBinaryReader reader)
-        {
-            FuiEdittext edittext = new FuiEdittext();
-            edittext.Unknown0 = reader.ReadInt32();
-            edittext.Rectangle.Min.X = reader.ReadSingle();
-            edittext.Rectangle.Max.X = reader.ReadSingle();
-            edittext.Rectangle.Min.Y = reader.ReadSingle();
-            edittext.Rectangle.Max.Y = reader.ReadSingle();
-            edittext.FontId = reader.ReadInt32();
-            edittext.FontScale = reader.ReadSingle();
-            edittext.Color = (reader.ReadUInt32());
-            edittext.Alignment = reader.ReadInt32();
-            edittext.Unknown3 = reader.ReadInt32();
-            edittext.Unknown4 = reader.ReadInt32();
-            edittext.Unknown5 = reader.ReadInt32();
-            edittext.Unknown6 = reader.ReadInt32();
-            edittext.Unknown7 = reader.ReadInt32();
-            edittext.htmlSource = reader.ReadString(0x100);
-            return edittext;
-        }
-
-
-        private FuiReference ReadReference(EndiannessAwareBinaryReader reader)
-        {
-            FuiReference reference = new FuiReference();
-            reference.SymbolIndex = reader.ReadInt32();
-            reference.Name = reader.ReadString(0x40);
-            reference.Index = reader.ReadInt32();
-            return reference;
-        }
-
-        private string ReadString(EndiannessAwareBinaryReader reader)
-        {
-            return reader.ReadString(0x40);
-        }
-
-        private FuiTimelineEvent ReadTimelineEvent(EndiannessAwareBinaryReader reader)
-        {
-            FuiTimelineEvent timelineEvent = new FuiTimelineEvent();
-            timelineEvent.EventType = reader.ReadInt16();
-            timelineEvent.ObjectType = reader.ReadInt16();
-            timelineEvent.Unknown0 = reader.ReadInt16();
-            timelineEvent.Index = reader.ReadInt16();
-            timelineEvent.Unknown1 = reader.ReadInt16();
-            timelineEvent.NameIndex = reader.ReadInt16();
-            timelineEvent.Matrix.Scale.Width = reader.ReadSingle();
-            timelineEvent.Matrix.RotateSkew0 = reader.ReadSingle();
-            timelineEvent.Matrix.RotateSkew1 = reader.ReadSingle();
-            timelineEvent.Matrix.Scale.Height = reader.ReadSingle();
-            timelineEvent.Matrix.Translation.X = reader.ReadSingle();
-            timelineEvent.Matrix.Translation.Y = reader.ReadSingle();
-            timelineEvent.ColorTransform.RedMultTerm = reader.ReadSingle();
-            timelineEvent.ColorTransform.GreenMultTerm = reader.ReadSingle();
-            timelineEvent.ColorTransform.BlueMultTerm = reader.ReadSingle();
-            timelineEvent.ColorTransform.AlphaMultTerm = reader.ReadSingle();
-            timelineEvent.ColorTransform.RedAddTerm = reader.ReadSingle();
-            timelineEvent.ColorTransform.GreenAddTerm = reader.ReadSingle();
-            timelineEvent.ColorTransform.BlueAddTerm = reader.ReadSingle();
-            timelineEvent.ColorTransform.AlphaAddTerm = reader.ReadSingle();
-            timelineEvent.Color = (reader.ReadUInt32());
-            return timelineEvent;
-        }
-
-        private FuiTimelineFrame ReadTimelineFrame(EndiannessAwareBinaryReader reader)
-        {
-            FuiTimelineFrame timelineFrame = new FuiTimelineFrame();
-            timelineFrame.FrameName = reader.ReadString(0x40);
-            timelineFrame.EventIndex = reader.ReadInt32();
-            timelineFrame.EventCount = reader.ReadInt32();
-            return timelineFrame;
-        }
-
-        private PointF ReadVert(EndiannessAwareBinaryReader reader)
-        {
-            PointF vert = new PointF();
-            vert.X = reader.ReadSingle();
-            vert.Y = reader.ReadSingle();
-            return vert;
-        }
-
-        private FuiShapeComponent ReadShapeComponent(EndiannessAwareBinaryReader reader)
-        {
-            FuiShapeComponent shapeComponent = new FuiShapeComponent();
-            shapeComponent.FillInfo.Type = (FuiFillStyle.FillType)reader.ReadInt32();
-            shapeComponent.FillInfo.Color = (reader.ReadUInt32());
-            shapeComponent.FillInfo.BitmapIndex = reader.ReadInt32();
-            shapeComponent.FillInfo.Matrix.Scale.Width = reader.ReadSingle();
-            shapeComponent.FillInfo.Matrix.Scale.Height = reader.ReadSingle();
-            shapeComponent.FillInfo.Matrix.RotateSkew0 = reader.ReadSingle();
-            shapeComponent.FillInfo.Matrix.RotateSkew1 = reader.ReadSingle();
-            shapeComponent.FillInfo.Matrix.Translation.X = reader.ReadSingle();
-            shapeComponent.FillInfo.Matrix.Translation.Y = reader.ReadSingle();
-            shapeComponent.VertIndex = reader.ReadInt32();
-            shapeComponent.VertCount = reader.ReadInt32();
-            return shapeComponent;
-        }
-
-        private FuiShape ReadShape(EndiannessAwareBinaryReader reader)
-        {
-            FuiShape shape = new FuiShape();
-            shape.Unknown = reader.ReadInt32();
-            shape.ShapeComponentIndex = reader.ReadInt32();
-            shape.ShapeComponentCount = reader.ReadInt32();
-            shape.Rectangle.Min.X = reader.ReadSingle();
-            shape.Rectangle.Max.X = reader.ReadSingle();
-            shape.Rectangle.Min.Y = reader.ReadSingle();
-            shape.Rectangle.Max.Y = reader.ReadSingle();
-            return shape;
-        }
-
-        private FuiTimeline ReadTimeline(EndiannessAwareBinaryReader reader)
-        {
-            FuiTimeline timeline = new FuiTimeline();
-            timeline.SymbolIndex = reader.ReadInt32();
-            timeline.FrameIndex = reader.ReadInt16();
-            timeline.FrameCount = reader.ReadInt16();
-            timeline.ActionIndex = reader.ReadInt16();
-            timeline.ActionCount = reader.ReadInt16();
-            timeline.Rectangle.Min.X = reader.ReadSingle();
-            timeline.Rectangle.Max.X = reader.ReadSingle();
-            timeline.Rectangle.Min.Y = reader.ReadSingle();
-            timeline.Rectangle.Max.Y = reader.ReadSingle();
-            return timeline;
-        }
-
-        private FuiTimelineAction ReadTimelineAction(EndiannessAwareBinaryReader reader)
-        {
-            FuiTimelineAction timelineAction = new FuiTimelineAction();
-            timelineAction.ActionType = reader.ReadByte();
-            timelineAction.Unknown = reader.ReadByte();
-            timelineAction.FrameIndex = reader.ReadInt16();
-            timelineAction.StringArg0 = reader.ReadString(0x40);
-            timelineAction.StringArg1 = reader.ReadString(0x40);
-            return timelineAction;
-        }
-
-        object IDataFormatReader.FromStream(Stream stream) => FromStream(stream);
-
-        object IDataFormatReader.FromFile(string filename) => FromFile(filename);
-    }
-}

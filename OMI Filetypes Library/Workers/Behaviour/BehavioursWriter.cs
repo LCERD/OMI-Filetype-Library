@@ -21,7 +21,7 @@ namespace OMI.Workers.Behaviour
 
         public void WriteToFile(string filename)
         {
-            using (var fs = File.OpenWrite(filename))
+            using (FileStream fs = File.OpenWrite(filename))
             {
                 WriteToStream(fs);
             }
@@ -30,16 +30,16 @@ namespace OMI.Workers.Behaviour
         void IDataFormatWriter.WriteToStream(Stream stream) => WriteToStream(stream);
         public void WriteToStream(Stream stream)
         {
-            var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, Endianness.BigEndian);
+            var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, ByteOrder.BigEndian);
 
             writer.Write(0);
             writer.Write(behaviourFile.entries.Count);
-            foreach (var entry in behaviourFile.entries)
+            foreach (BehaviourFile.RiderPositionOverride entry in behaviourFile.entries)
             {
                 writer.Write((short)entry.name.Length);
                 writer.WriteString(entry.name);
                 writer.Write(entry.overrides.Count);
-                foreach (var posOverride in entry.overrides)
+                foreach (BehaviourFile.RiderPositionOverride.PositionOverride posOverride in entry.overrides)
                 {
                     writer.Write(posOverride.EntityIsTamed);
                     writer.Write(posOverride.EntityHasSaddle);

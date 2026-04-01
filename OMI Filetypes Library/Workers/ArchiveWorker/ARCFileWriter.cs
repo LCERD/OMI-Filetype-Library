@@ -3,9 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using OMI.Formats.Archive;
-using OMI.Workers;
 
 namespace OMI.Workers.Archive
 {
@@ -20,7 +18,7 @@ namespace OMI.Workers.Archive
 
         public void WriteToFile(string filename)
         {
-            using (var fs = File.OpenWrite(filename))
+            using (FileStream fs = File.OpenWrite(filename))
             {
                 WriteToStream(fs);
             }
@@ -28,22 +26,22 @@ namespace OMI.Workers.Archive
 
         public void WriteToStream(Stream stream)
         {
-            using (var writer = new EndiannessAwareBinaryWriter(stream, Endianness.BigEndian))
+            using (var writer = new EndiannessAwareBinaryWriter(stream, ByteOrder.BigEndian))
             {
                 writer.Write(_archive.Count);
                 int currentOffset = 4 + _archive.Keys.ToArray().Sum(key => 10 + key.Length);
-                foreach (var pair in _archive)
+                foreach (KeyValuePair<string, ConsoleArchiveEntry> entry in _archive)
                 {
-                    int size = pair.Value.Length;
-                    writer.Write((short)pair.Key.Length);
-                    writer.WriteString(pair.Key, Encoding.ASCII);
+                    int size = entry.Value.Data.Length;
+                    writer.Write((short)entry.Key.Length);
+                    writer.WriteString(entry.Key, Encoding.ASCII);
                     writer.Write(currentOffset);
                     writer.Write(size);
                     currentOffset += size;
                 }
-                foreach (byte[] data in _archive.Values)
+                foreach (ConsoleArchiveEntry entry in _archive.Values)
                 {
-                    writer.Write(data);
+                    writer.Write(entry.Data);
                 }
             }
         }

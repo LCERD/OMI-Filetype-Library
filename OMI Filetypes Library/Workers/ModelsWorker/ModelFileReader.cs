@@ -67,7 +67,7 @@ namespace OMI.Workers.Model
         public ModelContainer FromStream(Stream stream)
         {
             var container = new ModelContainer();
-            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, true, Endianness.BigEndian))
+            using (var reader = new EndiannessAwareBinaryReader(stream, Encoding.ASCII, true, ByteOrder.BigEndian))
             {
                 container.Version = reader.ReadInt32();
 

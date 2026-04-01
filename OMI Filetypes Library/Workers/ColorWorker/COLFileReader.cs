@@ -15,7 +15,7 @@ namespace OMI.Workers.Color
         {
             if (!File.Exists(filename))
                 throw new FileNotFoundException(filename);
-            using (var fs = File.OpenRead(filename))
+            using (FileStream fs = File.OpenRead(filename))
             {
                 return FromStream(fs);
             }
@@ -24,11 +24,11 @@ namespace OMI.Workers.Color
         public ColorContainer FromStream(Stream s)
         {
             var colorContainer = new ColorContainer();
-            using (var reader = new EndiannessAwareBinaryReader(s, Encoding.ASCII, leaveOpen: true, Endianness.BigEndian))
+            using (var reader = new EndiannessAwareBinaryReader(s, Encoding.ASCII, leaveOpen: true, ByteOrder.BigEndian))
             {
                 colorContainer.Version = reader.ReadInt32();
-                int NumOfColors = reader.ReadInt32();
-                for (int i = 0; i < NumOfColors; i++)
+                int numberOfColors = reader.ReadInt32();
+                for (int i = 0; i < numberOfColors; i++)
                 {
                     var col = new ColorContainer.Color();
                     short length = reader.ReadInt16();
@@ -39,8 +39,8 @@ namespace OMI.Workers.Color
 
                 if (colorContainer.Version > 0)
                 {
-                    int NumOfWaterColors = reader.ReadInt32();
-                    for (int i = 0; i < NumOfWaterColors; i++)
+                    int numberOfWaterColors = reader.ReadInt32();
+                    for (int i = 0; i < numberOfWaterColors; i++)
                     {
                         var col = new ColorContainer.WaterColor();
                         short length = reader.ReadInt16();

@@ -21,6 +21,49 @@ using System.Linq;
 
 namespace OMI.Formats.Languages
 {
+    public static class AvailableLanguages
+    {
+        public const string CzechCzechia = "cs-CS";
+        public const string Czechia = "cs-CZ";
+        public const string Danish = "da-DA";
+        public const string DenmarkDanish = "da-DK";
+        public const string GermanAustria = "de-AT";
+        public const string German = "de-DE";
+        public const string GreekGreece = "el-EL";
+        public const string Greece = "el-GR";
+        public const string EnglishAustralia = "en-AU";
+        public const string EnglishCanada = "en-CA";
+        public const string English = "en-EN";
+        public const string EnglishUnitedKingdom = "en-GB";
+        public const string EnglishIreland = "en-IE";
+        public const string EnglishNewZealand = "en-NZ";
+        public const string EnglishUnitedStatesOfAmerica = "en-US";
+        public const string SpanishSpain = "es-ES";
+        public const string SpanishMexico = "es-MX";
+        public const string FinnishFinland = "fi-FI";
+        public const string FrenchFrance = "fr-FR";
+        public const string FrenchCanada = "fr-CA";
+        public const string ItalianItaly = "it-IT";
+        public const string JapaneseJapan = "ja-JP";
+        public const string KoreanSouthKorea = "ko-KR";
+        public const string Latin = "la-LAS";
+        public const string NorwegianNorway = "no-NO";
+        public const string NorwegianBokmålNorway = "nb-NO";
+        public const string DutchNetherlands = "nl-NL";
+        public const string DutchBelgium = "nl-BE";
+        public const string PolishPoland = "pl-PL";
+        public const string PortugueseBrazil = "pt-BR";
+        public const string PortuguesePortugal = "pt-PT";
+        public const string RussianRussia = "ru-RU";
+        public const string SlovakSlovakia = "sk-SK";
+        public const string SwedishSweden = "sv-SE";
+        public const string TurkishTurkey = "tr-TR";
+        public const string ChineseChina = "zh-CN"; // Chinese (simplified)
+        public const string ChineseHongKong = "zh-HK"; // Chinese (traditional)
+        public const string ChineseSingapore = "zh-SG";
+        public const string ChineseTaiwan = "zh-TW";
+    }
+
     public class LOCFile
     {
         public class InvalidLanguageException : Exception
@@ -34,70 +77,70 @@ namespace OMI.Formats.Languages
 
         public static readonly string[] ValidLanguages = new string[]
         {
-            "cs-CS",
-            "cs-CZ",
+            AvailableLanguages.CzechCzechia,
+            AvailableLanguages.Czechia,
 
             "da-CH",
-            "da-DA",
-            "da-DK",
+            AvailableLanguages.Danish,
+            AvailableLanguages.DenmarkDanish,
 
-            "de-AT",
-            "de-DE",
+            AvailableLanguages.GermanAustria,
+            AvailableLanguages.German,
 
-            "el-EL",
-            "el-GR",
+            AvailableLanguages.GreekGreece,
+            AvailableLanguages.Greece,
 
-            "en-AU",
-            "en-CA",
-            "en-EN",
-            "en-GB",
+            AvailableLanguages.EnglishAustralia,
+            AvailableLanguages.EnglishCanada,
+            AvailableLanguages.English,
+            AvailableLanguages.EnglishUnitedKingdom,
             "en-GR",
-            "en-IE",
-            "en-NZ",
-            "en-US",
+            AvailableLanguages.EnglishIreland,
+            AvailableLanguages.EnglishNewZealand,
+            AvailableLanguages.EnglishUnitedStatesOfAmerica,
 
-            "es-ES",
-            "es-MX",
+            AvailableLanguages.SpanishSpain,
+            AvailableLanguages.SpanishMexico,
 
             "fi-BE",
             "fi-CH",
-            "fi-FI",
+            AvailableLanguages.FinnishFinland,
 
-            "fr-FR",
-            "fr-CA",
+            AvailableLanguages.FrenchFrance,
+            AvailableLanguages.FrenchCanada,
 
-            "it-IT",
+            AvailableLanguages.ItalianItaly,
 
-            "ja-JP",
+            AvailableLanguages.JapaneseJapan,
 
-            "ko-KR",
+            AvailableLanguages.KoreanSouthKorea,
 
-            "la-LAS",
+            AvailableLanguages.Latin,
 
-            "no-NO",
+            AvailableLanguages.NorwegianNorway,
 
-            "nb-NO",
+            AvailableLanguages.NorwegianBokmålNorway,
 
-            "nl-NL",
-            "nl-BE",
+            AvailableLanguages.DutchNetherlands,
+            AvailableLanguages.DutchBelgium,
 
-            "pl-PL",
+            AvailableLanguages.PolishPoland,
 
-            "pt-BR",
-            "pt-PT",
+            AvailableLanguages.PortugueseBrazil,
+            AvailableLanguages.PortuguesePortugal,
 
-            "ru-RU",
+            AvailableLanguages.RussianRussia,
 
-            "sk-SK",
+            AvailableLanguages.SlovakSlovakia,
 
-            "sv-SE",
+            AvailableLanguages.SwedishSweden,
 
-            "tr-TR",
+            AvailableLanguages.TurkishTurkey,
 
-            "zh-CN",
-            "zh-HK",
-            "zh-SG",
-            "zh-TW",
+            AvailableLanguages.ChineseChina,
+            AvailableLanguages.ChineseHongKong,
+            AvailableLanguages.ChineseSingapore,
+            AvailableLanguages.ChineseTaiwan,
             "zh-CHT",
             "zh-HanS",
             "zh-HanT",

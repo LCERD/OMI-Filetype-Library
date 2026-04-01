@@ -57,7 +57,7 @@ namespace OMI.Workers.Model
 
         public void WriteToStream(Stream stream)
         {
-            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, Endianness.BigEndian))
+            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, ByteOrder.BigEndian))
             {
                 writer.Write(fileVersion);
                 writer.Write(container.ModelCount);

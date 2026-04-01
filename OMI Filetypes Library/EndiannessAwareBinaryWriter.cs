@@ -23,7 +23,7 @@ namespace OMI
 {
     public sealed class EndiannessAwareBinaryWriter : BinaryWriter
     {
-        private readonly Endianness _endianness = Endianness.LittleEndian;
+        private readonly ByteOrder _byteOrder = ByteOrder.LittleEndian;
         private readonly Encoding _encoding = Encoding.UTF8;
         public Encoding EncodingScheme => _encoding;
 
@@ -41,63 +41,63 @@ namespace OMI
             _encoding = encoding;
         }
 
-        public EndiannessAwareBinaryWriter(Stream output, Endianness endianness) : base(output)
+        public EndiannessAwareBinaryWriter(Stream output, ByteOrder byteOrder) : base(output)
         {
-            _endianness = endianness;
+            _byteOrder = byteOrder;
         }
 
-        public EndiannessAwareBinaryWriter(Stream output, Encoding encoding, Endianness endianness) : base(output, encoding)
+        public EndiannessAwareBinaryWriter(Stream output, Encoding encoding, ByteOrder byteOrder) : base(output, encoding)
         {
-            _endianness = endianness;
+            _byteOrder = byteOrder;
             _encoding = encoding;
         }
 
-        public EndiannessAwareBinaryWriter(Stream output, Encoding encoding, bool leaveOpen, Endianness endianness) : base(output, encoding, leaveOpen)
+        public EndiannessAwareBinaryWriter(Stream output, Encoding encoding, bool leaveOpen, ByteOrder byteOrder) : base(output, encoding, leaveOpen)
         {
-            _endianness = endianness;
+            _byteOrder = byteOrder;
             _encoding = encoding;
         }
 
-        private static void CheckEndiannessAndSwapBuffer(ref byte[] buffer, Endianness endianness)
+        private static void CheckEndiannessAndSwapBuffer(ref byte[] buffer, ByteOrder byteOrder)
         {
             if (!BitConverter.IsLittleEndian ||
-                endianness == Endianness.BigEndian)
+                byteOrder == ByteOrder.BigEndian)
                 Array.Reverse(buffer);
         }
 
-        public override void Write(short value) => Write(value, _endianness);
-        public override void Write(ushort value) => Write((short)value, _endianness);
-        public override void Write(int value) => Write(value, _endianness);
-        public override void Write(uint value) => Write((int)value, _endianness);
-        public override void Write(long value) => Write(value, _endianness);
-        public override void Write(ulong value) => Write((long)value, _endianness);
-        public override void Write(float value) => Write(value, _endianness);
+        public override void Write(short value) => Write(value, _byteOrder);
+        public override void Write(ushort value) => Write((short)value, _byteOrder);
+        public override void Write(int value) => Write(value, _byteOrder);
+        public override void Write(uint value) => Write((int)value, _byteOrder);
+        public override void Write(long value) => Write(value, _byteOrder);
+        public override void Write(ulong value) => Write((long)value, _byteOrder);
+        public override void Write(float value) => Write(value, _byteOrder);
 
-        public void Write(short value, Endianness endianness)
+        public void Write(short value, ByteOrder byteOrder)
         {
             byte[] buffer = BitConverter.GetBytes(value);
-            CheckEndiannessAndSwapBuffer(ref buffer, endianness);
+            CheckEndiannessAndSwapBuffer(ref buffer, byteOrder);
             Write(buffer);
         }
 
-        public void Write(int value, Endianness endianness)
+        public void Write(int value, ByteOrder byteOrder)
         {
             byte[] buffer = BitConverter.GetBytes(value);
-            CheckEndiannessAndSwapBuffer(ref buffer, endianness);
+            CheckEndiannessAndSwapBuffer(ref buffer, byteOrder);
             Write(buffer);
         }
 
-        public void Write(long value, Endianness endianness)
+        public void Write(long value, ByteOrder byteOrder)
         {
             byte[] buffer = BitConverter.GetBytes(value);
-            CheckEndiannessAndSwapBuffer(ref buffer, endianness);
+            CheckEndiannessAndSwapBuffer(ref buffer, byteOrder);
             Write(buffer);
         }
 
-        public void Write(float value, Endianness endianness)
+        public void Write(float value, ByteOrder byteOrder)
         {
             byte[] buffer = BitConverter.GetBytes(value);
-            CheckEndiannessAndSwapBuffer(ref buffer, endianness);
+            CheckEndiannessAndSwapBuffer(ref buffer, byteOrder);
             Write(buffer);
         }
 

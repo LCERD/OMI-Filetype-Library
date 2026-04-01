@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 
 namespace OMI.Formats.Pck
@@ -40,35 +41,36 @@ namespace OMI.Formats.Pck
 
         public void AddProperty(KeyValuePair<string, string> property) => Properties.Add(property);
 
-        public void AddProperty(string name, string value) => Properties.Add(name, value);
+        public void AddProperty(string propertyName, string value) => Properties.Add(propertyName, value);
 
-        public void AddProperty<T>(string name, T value) => Properties.Add(name, value);
+        public void AddProperty<T>(string propertyName, T value) => Properties.Add(propertyName, value);
 
-        public void RemoveProperty(string name) => Properties.Remove(name);
+        public void RemoveProperty(string propertyName) => Properties.Remove(propertyName);
 
         public bool RemoveProperty(KeyValuePair<string, string> property) => Properties.Remove(property);
 
-        public void RemoveProperties(string name) => Properties.RemoveAll(p => p.Key == name);
+        public void RemoveProperties(string propertyName) => Properties.RemoveAll(p => p.Key == propertyName);
 
         public void ClearProperties() => Properties.Clear();
 
-        public bool HasProperty(string property) => Properties.Contains(property);
+        public bool HasProperty(string propertyName) => Properties.Contains(propertyName);
 
         public int GetPropertyIndex(KeyValuePair<string, string> property) => Properties.IndexOf(property);
 
-        public string GetProperty(string name) => Properties.GetPropertyValue(name);
+        public string GetProperty(string propertyName) => Properties.GetPropertyValue(propertyName);
 
         public T GetProperty<T>(string name, Func<string, T> func) => Properties.GetPropertyValue(name, func);
 
-        public bool TryGetProperty(string name, out string value) => Properties.TryGetProperty(name, out value);
+        public bool TryGetProperty(string propertyName, out string value) => Properties.TryGetProperty(propertyName, out value);
 
-        public KeyValuePair<string, string>[] GetMultipleProperties(string property) => Properties.GetProperties(property);
+        public KeyValuePair<string, string>[] GetMultipleProperties(string propertyName) => Properties.GetProperties(propertyName);
+        public string[] GetPropertyValues(string propertyName) => Properties.GetProperties(propertyName).Select(kv => kv.Value).ToArray();
 
         public IReadOnlyList<KeyValuePair<string, string>> GetProperties() => Properties.AsReadOnly();
 
         public void SetProperty(int index, KeyValuePair<string, string> property) => Properties[index] = property;
 
-        public void SetProperty(string name, string value) => Properties.SetProperty(name, value);
+        public void SetProperty(string propertyName, string value) => Properties.SetProperty(propertyName, value);
 
         public override bool Equals(object obj)
         {

@@ -24,18 +24,20 @@ namespace OMI.Workers.GameRule
             PrepareLookUpTable(_grfFile.Root, ref StringLookUpTable);
         }
 
-        private void PrepareLookUpTable(GameRuleFile.GameRule rule, ref List<string> LUT)
+        private void PrepareLookUpTable(GameRuleFile.GameRule rule, ref List<string> lut)
         {
-            if (!LUT.Contains(rule.Name)) LUT.Add(rule.Name);
-            foreach (var subRule in rule.ChildRules)
-                PrepareLookUpTable(subRule, ref LUT);
-            foreach (var param in rule.Parameters)
-                if (!LUT.Contains(param.Key)) LUT.Add(param.Key);
+            if (!lut.Contains(rule.Name))
+                lut.Add(rule.Name);
+            foreach (GameRuleFile.GameRule subRule in rule.GetRules())
+                PrepareLookUpTable(subRule, ref lut);
+            foreach (KeyValuePair<string, string> parameter in rule.GetParameters())
+                if (!lut.Contains(parameter.Key))
+                    lut.Add(parameter.Key);
         }
 
         public void WriteToFile(string filename)
         {
-            using(var fs = File.OpenWrite(filename))
+            using (FileStream fs = File.OpenWrite(filename))
             {
                 WriteToStream(fs);
             }
@@ -43,11 +45,11 @@ namespace OMI.Workers.GameRule
 
         public void WriteToStream(Stream stream)
         {
-            var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, Endianness.BigEndian);
+            var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, ByteOrder.BigEndian);
             WriteHeader(writer);
             using (var uncompressed_stream = new MemoryStream())
             {
-                var decompressed_writer = new EndiannessAwareBinaryWriter(uncompressed_stream, Encoding.ASCII, leaveOpen: true, Endianness.BigEndian);
+                var decompressed_writer = new EndiannessAwareBinaryWriter(uncompressed_stream, Encoding.ASCII, leaveOpen: true, ByteOrder.BigEndian);
                 WriteBody(decompressed_writer);
                 HandleCompression(writer, uncompressed_stream);
             }
@@ -55,20 +57,20 @@ namespace OMI.Workers.GameRule
 
         private void HandleCompression(EndiannessAwareBinaryWriter destination, MemoryStream sourceStream)
         {
-            byte[] _buffer = sourceStream.ToArray();
-            int _original_length = _buffer.Length;
+            byte[] buffer = sourceStream.ToArray();
+            int original_length = buffer.Length;
 
             if (_grfFile.Header.CompressionLevel >= GameRuleFile.CompressionLevel.CompressedRle)
-                _buffer = CompressRLE(_buffer);
+                buffer = CompressRLE(buffer);
             if (_grfFile.Header.CompressionLevel >= GameRuleFile.CompressionLevel.Compressed)
             {
-                _buffer = Compress(_buffer);
-                destination.Write(_original_length);
-                destination.Write(_buffer.Length);
+                buffer = Compress(buffer);
+                destination.Write(original_length);
+                destination.Write(buffer.Length);
             }
             if (_grfFile.Header.CompressionLevel >= GameRuleFile.CompressionLevel.CompressedRleCrc)
-                MakeAndWriteCrc(destination, _buffer);
-            destination.Write(_buffer);
+                MakeAndWriteCrc(destination, buffer);
+            destination.Write(buffer);
         }
 
         private byte[] Compress(byte[] data)
@@ -125,7 +127,7 @@ namespace OMI.Workers.GameRule
         private void WriteFiles(EndiannessAwareBinaryWriter writer)
         {
             writer.Write(_grfFile.Files.Count);
-            foreach (var file in _grfFile.Files)
+            foreach (GameRuleFile.FileEntry file in _grfFile.Files)
             {
                 WriteString(writer, file.Name);
                 writer.Write(file.Data.Length);
@@ -141,12 +143,15 @@ namespace OMI.Workers.GameRule
 
         private void WriteGameRuleHierarchy(EndiannessAwareBinaryWriter writer, GameRuleFile.GameRule rule)
         {
-            writer.Write(rule.ChildRules.Count);
-            foreach (var subRule in rule.ChildRules)
+            IReadOnlyCollection<GameRuleFile.GameRule> rules = rule.GetRules();
+            writer.Write(rules.Count);
+            foreach (GameRuleFile.GameRule subRule in rules)
             {
                 SetString(writer, subRule.Name);
-                writer.Write(subRule.Parameters.Count);
-                foreach (var param in subRule.Parameters) WriteParameter(writer, param);
+                IReadOnlyCollection<KeyValuePair<string, string>> parameters = subRule.GetParameters();
+                writer.Write(parameters.Count);
+                foreach (KeyValuePair<string, string> parameter in parameters)
+                    WriteParameter(writer, parameter);
                 WriteGameRuleHierarchy(writer, subRule);
             }
         }
@@ -160,7 +165,8 @@ namespace OMI.Workers.GameRule
         private void SetString(EndiannessAwareBinaryWriter writer, string s)
         {
             int i = StringLookUpTable.IndexOf(s);
-            if (i == -1) throw new Exception(nameof(s));
+            if (i == -1)
+                throw new Exception(nameof(s));
             writer.Write(i);
         }
 

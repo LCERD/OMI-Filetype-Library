@@ -20,7 +20,7 @@ namespace OMI.Workers.Color
 
         public void WriteToFile(string filename)
         {
-            using (var fs = File.OpenWrite(filename))
+            using (FileStream fs = File.OpenWrite(filename))
             {
                 WriteToStream(fs);
             }
@@ -28,7 +28,7 @@ namespace OMI.Workers.Color
 
         public void WriteToStream(Stream stream)
         {
-            using (var writer = new EndiannessAwareBinaryWriter(stream, Endianness.BigEndian))
+            using (var writer = new EndiannessAwareBinaryWriter(stream, ByteOrder.BigEndian))
             {
                 writer.Write(_container.Version);
                 writer.Write(_container.Colors.Count);

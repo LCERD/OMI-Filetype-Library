@@ -23,11 +23,11 @@ namespace OMI.Workers.Material
 
         public void WriteToStream(Stream stream)
         {
-            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, Endianness.BigEndian))
+            using (var writer = new EndiannessAwareBinaryWriter(stream, Encoding.ASCII, leaveOpen: true, ByteOrder.BigEndian))
             {
                 writer.Write(container.Version);
                 writer.Write(container.Count);
-                foreach (var material in container)
+                foreach (MaterialContainer.Material material in container)
                 {
                     writer.Write(Convert.ToInt16(material.Name.Length));
                     writer.WriteString(material.Name);
@@ -39,7 +39,7 @@ namespace OMI.Workers.Material
 
         public void WriteToFile(string filename)
         {
-            using (var fs = File.OpenWrite(filename))
+            using (FileStream fs = File.OpenWrite(filename))
             {
                 WriteToStream(fs);
             }

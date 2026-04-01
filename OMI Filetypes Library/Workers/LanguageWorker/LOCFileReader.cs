@@ -11,22 +11,21 @@ namespace OMI.Workers.Language
 
         public LOCFile FromFile(string filename)
         {
-            if (File.Exists(filename))
+            if (!File.Exists(filename))
+                throw new FileNotFoundException(filename);
+            
+            LOCFile locFile = null;
+            using (FileStream fs = File.OpenRead(filename))
             {
-                LOCFile locFile = null;
-                using (var fs = File.OpenRead(filename))
-                {
-                    locFile = FromStream(fs);
-                }
-                return locFile;
+                locFile = FromStream(fs);
             }
-            throw new FileNotFoundException(filename);
+            return locFile;
         }
 
         public LOCFile FromStream(Stream stream)
         {
             LOCFile locFile = new LOCFile();
-            using (var reader = new EndiannessAwareBinaryReader(stream, Endianness.BigEndian))
+            using (var reader = new EndiannessAwareBinaryReader(stream, ByteOrder.BigEndian))
             {
                 int loc_type = reader.ReadInt32();
                 int language_count = reader.ReadInt32();
@@ -49,7 +48,7 @@ namespace OMI.Workers.Language
                 for (int i = 0; i < language_count; i++)
                 {
                     Stream languageEntryStream = new MemoryStream(reader.ReadBytes(languageEntryBufferSizes[i]));
-                    using (var entryReader = new EndiannessAwareBinaryReader(languageEntryStream, Endianness.BigEndian))
+                    using (var entryReader = new EndiannessAwareBinaryReader(languageEntryStream, ByteOrder.BigEndian))
                     {
                         if (0 < entryReader.ReadInt32())
                             entryReader.ReadByte();
