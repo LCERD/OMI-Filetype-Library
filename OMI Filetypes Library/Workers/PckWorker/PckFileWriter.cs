@@ -10,13 +10,13 @@ namespace OMI.Workers.Pck
     {
         private readonly PckFile _pckFile;
         private readonly ByteOrder _byteOrder;
-        private readonly IList<string> _propertyList;
+        private readonly IList<string> _parameterList;
 
         public PckFileWriter(PckFile pckFile, ByteOrder byteOrder)
         {
             _pckFile = pckFile;
             _byteOrder = byteOrder;
-            _propertyList = pckFile.GetPropertyList();
+            _parameterList = pckFile.GetParameterList();
         }
 
         public void WriteToFile(string filename)
@@ -36,12 +36,12 @@ namespace OMI.Workers.Pck
 
                 bool hasXMLVersion = _pckFile.xmlVersion > 0;
 
-                writer.Write(_propertyList.Count + Convert.ToInt32(hasXMLVersion));
+                writer.Write(_parameterList.Count + Convert.ToInt32(hasXMLVersion));
                 if(hasXMLVersion)
-                    _propertyList.Add(PckFile.XML_VERSION_STRING);
-                foreach (var entry in _propertyList)
+                    _parameterList.Add(PckFile.XML_VERSION_STRING);
+                foreach (var entry in _parameterList)
                 {
-                        writer.Write(_propertyList.IndexOf(entry));
+                        writer.Write(_parameterList.IndexOf(entry));
                         WriteString(writer, entry);
                 }
                 if (hasXMLVersion)
@@ -60,13 +60,13 @@ namespace OMI.Workers.Pck
 
                 foreach (PckAsset asset in assets)
                 {
-                    writer.Write(asset.Properties.Count);
-                    foreach (KeyValuePair<string, string> property in asset.Properties)
+                    writer.Write(asset.Parameters.Count);
+                    foreach (KeyValuePair<string, string> parameter in asset.Parameters)
                     {
-                        if (!_propertyList.Contains(property.Key))
-                            throw new KeyNotFoundException("Property not found in Look Up Table: " + property.Key);
-                        writer.Write(_propertyList.IndexOf(property.Key));
-                        WriteString(writer, property.Value);
+                        if (!_parameterList.Contains(parameter.Key))
+                            throw new KeyNotFoundException("Parameter not found in Look Up Table: " + parameter.Key);
+                        writer.Write(_parameterList.IndexOf(parameter.Key));
+                        WriteString(writer, parameter.Value);
                     }
                     writer.Write(asset.Data);
                 }

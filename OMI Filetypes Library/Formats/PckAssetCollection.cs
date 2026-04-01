@@ -52,9 +52,9 @@ namespace OMI.Formats.Pck
                 if (this[value.Filename, value.Type].Equals(value))
                 {
                     Debug.WriteLine($"Duplicate asset: '{value.Filename}'", category: $"{nameof(PckAssetCollection)}.{nameof(Add)}");
-                    Debug.WriteLine($"Merging '{value.Filename}' Properties", category: $"{nameof(PckAssetCollection)}.{nameof(Add)}");
+                    Debug.WriteLine($"Merging '{value.Filename}' Parameters", category: $"{nameof(PckAssetCollection)}.{nameof(Add)}");
                     PckAsset first = GetAsset(value.Filename, value.Type);
-                    first.Properties.Merge(value.Properties);
+                    first.Parameters.Merge(value.Parameters);
                     return;
                 }
                 var markedKey = key + value.GetHashCode().ToString();

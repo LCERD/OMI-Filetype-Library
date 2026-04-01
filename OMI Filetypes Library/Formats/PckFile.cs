@@ -30,12 +30,12 @@ namespace OMI.Formats.Pck
 
         public PckFile() : this(3) { }
 
-        public List<string> GetPropertyList()
+        public List<string> GetParameterList()
         {
             var lut = new List<string>();
             foreach (PckAsset asset in Assets)
             {
-                asset.Properties.ForEach(pair =>
+                asset.Parameters.ForEach(pair =>
                 {
                     if (!lut.Contains(pair.Key))
                         lut.Add(pair.Key);

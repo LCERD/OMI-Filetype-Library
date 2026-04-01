@@ -65,10 +65,10 @@ namespace OMI.Workers.Pck
                 else if (pckType < 3)
                     throw new Exception(pckType.ToString());
 
-                IList<string> propertyList = ReadLookUpTable(reader, out int xmlVersion);
+                IList<string> parameterList = ReadLookUpTable(reader, out int xmlVersion);
                 pckFile = new PckFile(pckType, xmlVersion);
                 ReadAssetEntries(reader);
-                ReadAssetContents(pckFile, propertyList, reader);
+                ReadAssetContents(pckFile, parameterList, reader);
             }
             return pckFile;
         }
@@ -77,19 +77,19 @@ namespace OMI.Workers.Pck
         {
             int count = reader.ReadInt32();
             _xmlVersion = 0;
-            var propertyLookUp = new List<string>(count);
+            var parameterLookUp = new List<string>(count);
             for (int i = 0; i < count; i++)
             {
                 int index = reader.ReadInt32();
                 string value = ReadString(reader);
-                propertyLookUp.Insert(index, value);
+                parameterLookUp.Insert(index, value);
             }
-            if (propertyLookUp.Contains(PckFile.XML_VERSION_STRING))
+            if (parameterLookUp.Contains(PckFile.XML_VERSION_STRING))
             {
                 _xmlVersion = reader.ReadInt32();
                 Console.WriteLine($"XML Version num: {_xmlVersion}");
             }
-            return propertyLookUp;
+            return parameterLookUp;
         }
 
         private void ReadAssetEntries(EndiannessAwareBinaryReader reader)
@@ -106,16 +106,16 @@ namespace OMI.Workers.Pck
             }
         }
 
-        private void ReadAssetContents(PckFile pckFile, IList<string> propertyList, EndiannessAwareBinaryReader reader)
+        private void ReadAssetContents(PckFile pckFile, IList<string> parameterList, EndiannessAwareBinaryReader reader)
         {
             foreach (PckAsset asset in _assets)
             {
-                int propertyCount = reader.ReadInt32();
-                for (; 0 < propertyCount; propertyCount--)
+                int parameterCount = reader.ReadInt32();
+                for (; 0 < parameterCount; parameterCount--)
                 {
-                    string key = propertyList[reader.ReadInt32()];
+                    string key = parameterList[reader.ReadInt32()];
                     string value = ReadString(reader);
-                    asset.Properties.Add(key, value);
+                    asset.Parameters.Add(key, value);
                 }
                 reader.Read(asset.Data, 0, asset.Size);
                 pckFile.AddAsset(asset);

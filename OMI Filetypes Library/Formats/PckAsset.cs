@@ -31,7 +31,7 @@ namespace OMI.Formats.Pck
         public byte[] Data => _data;
         public int Size => _data?.Length ?? 0;
 
-        public int PropertyCount => Properties.Count;
+        public int ParameterCount => Parameters.Count;
 
         public PckAsset(string filename, PckAssetType type)
         {
@@ -39,38 +39,38 @@ namespace OMI.Formats.Pck
             Filename = filename;
         }
 
-        public void AddProperty(KeyValuePair<string, string> property) => Properties.Add(property);
+        public void AddParameter(KeyValuePair<string, string> parameter) => Parameters.Add(parameter);
 
-        public void AddProperty(string propertyName, string value) => Properties.Add(propertyName, value);
+        public void AddParameter(string parameter, string value) => Parameters.Add(parameter, value);
 
-        public void AddProperty<T>(string propertyName, T value) => Properties.Add(propertyName, value);
+        public void AddParameter<T>(string parameterName, T value) => Parameters.Add(parameterName, value);
 
-        public void RemoveProperty(string propertyName) => Properties.Remove(propertyName);
+        public void RemoveParameter(string parameterName) => Parameters.Remove(parameterName);
 
-        public bool RemoveProperty(KeyValuePair<string, string> property) => Properties.Remove(property);
+        public bool RemoveParameter(KeyValuePair<string, string> parameter) => Parameters.Remove(parameter);
 
-        public void RemoveProperties(string propertyName) => Properties.RemoveAll(p => p.Key == propertyName);
+        public void RemoveParameters(string parameterName) => Parameters.RemoveAll(p => p.Key == parameterName);
 
-        public void ClearProperties() => Properties.Clear();
+        public void ClearParameters() => Parameters.Clear();
 
-        public bool HasProperty(string propertyName) => Properties.Contains(propertyName);
+        public bool HasParameter(string parameterName) => Parameters.Contains(parameterName);
 
-        public int GetPropertyIndex(KeyValuePair<string, string> property) => Properties.IndexOf(property);
+        public int GetParameterIndex(KeyValuePair<string, string> parameter) => Parameters.IndexOf(parameter);
 
-        public string GetProperty(string propertyName) => Properties.GetPropertyValue(propertyName);
+        public string GetParameter(string parameterName) => Parameters.GetParameterValue(parameterName);
 
-        public T GetProperty<T>(string name, Func<string, T> func) => Properties.GetPropertyValue(name, func);
+        public T GetParameter<T>(string name, Func<string, T> func) => Parameters.GetParameterValue(name, func);
 
-        public bool TryGetProperty(string propertyName, out string value) => Properties.TryGetProperty(propertyName, out value);
+        public bool TryGetParameter(string parameterName, out string value) => Parameters.TryGetParameter(parameterName, out value);
 
-        public KeyValuePair<string, string>[] GetMultipleProperties(string propertyName) => Properties.GetProperties(propertyName);
-        public string[] GetPropertyValues(string propertyName) => Properties.GetProperties(propertyName).Select(kv => kv.Value).ToArray();
+        public KeyValuePair<string, string>[] GetMultipleParameters(string parameterName) => Parameters.GetParameters(parameterName);
+        public string[] GetParameterValues(string parameterName) => Parameters.GetParameters(parameterName).Select(kv => kv.Value).ToArray();
 
-        public IReadOnlyList<KeyValuePair<string, string>> GetProperties() => Properties.AsReadOnly();
+        public IReadOnlyList<KeyValuePair<string, string>> GetParameters() => Parameters.AsReadOnly();
 
-        public void SetProperty(int index, KeyValuePair<string, string> property) => Properties[index] = property;
+        public void SetParameter(int index, KeyValuePair<string, string> parameter) => Parameters[index] = parameter;
 
-        public void SetProperty(string propertyName, string value) => Properties.SetProperty(propertyName, value);
+        public void SetParameter(string parameterName, string value) => Parameters.SetParameter(parameterName, value);
 
         public override bool Equals(object obj)
         {
@@ -84,7 +84,7 @@ namespace OMI.Formats.Pck
             hashCode = hashCode * -1521134295 + Type.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(Data);
             hashCode = hashCode * -1521134295 + Size.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<PckFileProperties>.Default.GetHashCode(Properties);
+            hashCode = hashCode * -1521134295 + EqualityComparer<PckFileParameters>.Default.GetHashCode(Parameters);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(filename);
             hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(_data);
             return hashCode;
@@ -98,7 +98,7 @@ namespace OMI.Formats.Pck
         internal delegate void OnFilenameChangingDelegate(PckAsset _this, string newFilename);
         internal delegate void OnFiletypeChangingDelegate(PckAsset _this, PckAssetType newFiletype);
         internal delegate void OnMoveDelegate(PckAsset _this);
-        internal PckFileProperties Properties = new PckFileProperties();
+        internal PckFileParameters Parameters = new PckFileParameters();
 
         private string filename;
         private PckAssetType type;
