@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.IO.Compression;
-using Newtonsoft.Json;
 using System.Linq;
-
 using OMI.Workers.GameRule;
 
 namespace OMI.Formats.GameRule
@@ -303,7 +301,6 @@ namespace OMI.Formats.GameRule
 
             public string Name { get; } = string.Empty;
 
-            [JsonIgnore]
             public GameRule Parent => _parent;
             private GameRule _parent = null;
             private Dictionary<string, string> _parameters { get; } = new Dictionary<string, string>();
