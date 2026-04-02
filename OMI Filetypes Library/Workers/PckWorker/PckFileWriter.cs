@@ -12,9 +12,13 @@ namespace OMI.Workers.Pck
         private readonly ByteOrder _byteOrder;
         private readonly IList<string> _parameterList;
 
-        public PckFileWriter(PckFile pckFile, ByteOrder byteOrder)
+        public PckFileWriter(PckFile pckFile, ByteOrder byteOrder, int xmlVersion = -1)
         {
             _pckFile = pckFile;
+            if(xmlVersion > -1 && xmlVersion <= 3)
+            {
+                _pckFile.xmlVersion = xmlVersion;
+            }
             _byteOrder = byteOrder;
             _parameterList = pckFile.GetParameterList();
         }
